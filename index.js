@@ -4,14 +4,14 @@ require("dotenv").config();
 
 const app = express();
 const port = 5005;
+const uri = process.env.MONGODB_URI;
 
 // Middleware to parse form data
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json()); // For JSON payloads
-
 // Connect to MongoDB
 mongoose
-  .connect("mongodb://localhost:27017/api-form")
+  .connect(uri)
   .then(() => console.log("Connected to MongoDB"))
   .catch((err) => console.error("Error connecting to MongoDB:", err));
 
