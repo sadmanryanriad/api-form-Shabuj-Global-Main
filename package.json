@@ -25,7 +25,9 @@
   },
   "homepage": "https://github.com/sadmanryanriad/api-form-Shabuj-Global-Main#readme",
   "dependencies": {
+    "dotenv": "^16.4.5",
     "express": "^4.21.1",
-    "mongoose": "^8.7.1"
+    "mongoose": "^8.7.1",
+    "nodemailer": "^6.9.15"
   }
 }

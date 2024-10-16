@@ -1,5 +1,6 @@
 const express = require("express");
 const mongoose = require("mongoose");
+require("dotenv").config();
 
 const app = express();
 const port = 5005;
@@ -20,7 +21,7 @@ app.get("/", (req, res) => {
 });
 
 // Import Enquire model
-const enquire  = require("./controllers/enquire");
+const enquire = require("./controllers/enquire");
 
 // Form API to handle subject, email, and enquire data
 app.post("/enquire", enquire);
