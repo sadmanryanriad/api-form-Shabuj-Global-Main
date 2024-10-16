@@ -1,5 +1,5 @@
 const Enquire = require("../models/Enquire");
-const sendMail = require("../utils/sendEmail");
+const sendEmail = require("../utils/sendEmail");
 
 const enquire = async (req, res) => {
   const { subject, email, message } = req.body;
@@ -14,8 +14,7 @@ const enquire = async (req, res) => {
     await newEnquire.save();
 
     // Prepare email content
-    // const mailTo = "shabujglobaleducation24@gmail.com"; // Recipient email
-    const mailTo = "code.error.c@gmail.com"; // Recipient email
+    const mailTo = process.env.SEND_EMAIL_TO; // Recipient email
     const mailSubject = `New Enquiry: ${subject}`;
     const mailText = `You have received a new enquiry from ${email}.`;
     const mailHtml = `
@@ -36,7 +35,7 @@ const enquire = async (req, res) => {
   `;
 
     // Send the email in the background
-    sendMail(mailTo, mailSubject, mailText, mailHtml)
+    sendEmail(mailTo, mailSubject, mailText, mailHtml)
       .then(() => {
         console.log("Email sent successfully!");
       })

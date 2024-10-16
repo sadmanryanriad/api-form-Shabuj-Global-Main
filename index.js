@@ -22,9 +22,13 @@ app.get("/", (req, res) => {
 
 // Import Enquire model
 const enquire = require("./controllers/enquire");
+const apply = require("./controllers/apply");
 
 // Form API to handle subject, email, and enquire data
 app.post("/enquire", enquire);
+
+//Form API to handle name, email, phoneNumber, StudyDestination, StudyYear, StudyIntake
+app.post("/apply", apply);
 
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
