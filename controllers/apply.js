@@ -1,4 +1,4 @@
-const Apply = require("../models/apply");
+const Apply = require("../models/Apply");
 const sendEmail = require("../utils/sendEmail");
 
 const apply = async (req, res) => {
