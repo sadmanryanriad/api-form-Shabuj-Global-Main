@@ -1,0 +1,31 @@
+{
+  "name": "api-form-shabuj-global-main",
+  "version": "1.0.0",
+  "description": "form for shabuj global main hero section",
+  "main": "index.js",
+  "scripts": {
+    "test": "node index.js",
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sadmanryanriad/api-form-Shabuj-Global-Main.git"
+  },
+  "keywords": [
+    "nodejs",
+    "expressjs",
+    "mongoose",
+    "backend",
+    "api"
+  ],
+  "author": "sadmanryanriad@gmail.com",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sadmanryanriad/api-form-Shabuj-Global-Main/issues"
+  },
+  "homepage": "https://github.com/sadmanryanriad/api-form-Shabuj-Global-Main#readme",
+  "dependencies": {
+    "express": "^4.21.1",
+    "mongoose": "^8.7.1"
+  }
+}
