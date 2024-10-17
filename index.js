@@ -1,11 +1,26 @@
 const express = require("express");
 const mongoose = require("mongoose");
+const cors = require("cors");
 require("dotenv").config();
 
 const app = express();
 const port = 5005;
 const uri = process.env.MONGODB_URI;
 
+//middlewares
+// Allow requests from specific origin and support credentials
+const corsOptions = {
+  origin: [
+    "http://localhost:5173",
+    "https://api-form.studyuk.today",
+    "http://api-form.studyuk.today",
+  ],
+  credentials: true,
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  allowedHeaders: "Content-Type,Authorization",
+};
+
+app.use(cors(corsOptions));
 // Middleware to parse form data
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json()); // For JSON payloads
