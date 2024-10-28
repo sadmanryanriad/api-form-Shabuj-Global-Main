@@ -1,0 +1,38 @@
+const express = require("express");
+const studentRegistrationRoute = express.Router();
+const StudentRegistration = require("../models/StudentRegistration");
+
+// // GET request for testing route
+// studentRegistrationRoute.get("/", (req, res) => {
+//   res.send("Student Registration Route");
+// });
+
+// POST request to store any posted data into the StudentRegistrations collection
+studentRegistrationRoute.post("/", async (req, res) => {
+  try {
+    const newRegistration = new StudentRegistration(req.body);
+    await newRegistration.save();
+    res.status(201).json({
+      message: "Registration saved successfully",
+      data: newRegistration,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error saving registration", error });
+  }
+});
+
+// GET request to retrieve all registrations from the collection
+studentRegistrationRoute.get("/", async (req, res) => {
+  try {
+    const registrations = await StudentRegistration.find();
+    res.status(200).json({
+      message: "All registrations retrieved successfully",
+      total: registrations.length,
+      data: registrations,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error retrieving registrations", error });
+  }
+});
+
+module.exports = studentRegistrationRoute;
