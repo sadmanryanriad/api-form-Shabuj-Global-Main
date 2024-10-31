@@ -15,6 +15,8 @@ const corsOptions = {
     "http://localhost:3000",
     "https://api-form.studyuk.today",
     "http://api-form.studyuk.today",
+    "https://next.studyuk.today/",
+    "http://next.studyuk.today/",
   ],
   credentials: true,
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
