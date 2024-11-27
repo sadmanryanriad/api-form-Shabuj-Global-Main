@@ -17,6 +17,8 @@ const corsOptions = {
     "http://api-form.studyuk.today",
     "https://next.studyuk.today",
     "http://next.studyuk.today",
+    "https://sge-next-2.vercel.app",
+    "http://sge-next-2.vercel.app",
   ],
   credentials: true,
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
