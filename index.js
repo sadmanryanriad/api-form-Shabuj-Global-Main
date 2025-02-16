@@ -50,18 +50,31 @@ const apply = require("./controllers/apply");
 const studentRegistrationRoute = require("./routes/studentRegistration");
 const getEnquires = require("./controllers/getEnquires");
 const getApplications = require("./controllers/getApplications");
+// Import patch controllers
+const applyPatch = require("./controllers/patches/applyPatch");
+const enquirePatch = require("./controllers/patches/enquirePatch");
+const studentRegistrationPatch = require("./controllers/patches/studentRegistrationPatch");
+
 
 // Form API to handle subject, email, and enquire data
 app.post("/enquire", enquire);
 // API to get all enquiries
 app.get("/enquires", getEnquires);
+// To patch
+app.patch("/enquires/:id", enquirePatch);
 
 //Form API to handle name, email, phoneNumber, StudyDestination, StudyYear, StudyIntake
 app.post("/apply", apply);
 // API to get all applications
 app.get("/applications", getApplications);
+// To patch
+app.patch("/applications/:id", applyPatch)
 
+//Student Registration Route
 app.use("/studentRegistration", studentRegistrationRoute);
+// To patch
+app.patch("/studentRegistration/:id", studentRegistrationPatch);
+
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });

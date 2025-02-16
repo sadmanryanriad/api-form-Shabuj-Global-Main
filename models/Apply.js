@@ -20,6 +20,7 @@ const applySchema = new mongoose.Schema({
   studyIntake: {
     type: String,
   },
+  markAsRead: { type: Boolean, default: false },
 });
 
 const Apply = mongoose.model("Apply", applySchema);
