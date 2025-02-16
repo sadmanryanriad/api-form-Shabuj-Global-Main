@@ -44,16 +44,22 @@ app.get("/", (req, res) => {
   res.send("<h1>Home Page</h1> <p>api-form-Shabuj-Global-Main</p>");
 });
 
-// Import Enquire model
+// Import 
 const enquire = require("./controllers/enquire");
 const apply = require("./controllers/apply");
 const studentRegistrationRoute = require("./routes/studentRegistration");
+const getEnquires = require("./controllers/getEnquires");
+const getApplications = require("./controllers/getApplications");
 
 // Form API to handle subject, email, and enquire data
 app.post("/enquire", enquire);
+// API to get all enquiries
+app.get("/enquires", getEnquires);
 
 //Form API to handle name, email, phoneNumber, StudyDestination, StudyYear, StudyIntake
 app.post("/apply", apply);
+// API to get all applications
+app.get("/applications", getApplications);
 
 app.use("/studentRegistration", studentRegistrationRoute);
 app.listen(port, () => {
