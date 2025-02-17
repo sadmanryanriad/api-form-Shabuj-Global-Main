@@ -33,38 +33,6 @@ studentRegistrationRoute.get("/", async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: "Error retrieving registrations", error });
   }
-});
-
-// Patch student registrations
-const mongoose = require("mongoose");
-studentRegistrationRoute.patch("/:id", async (req, res) => {
-  const { id } = req.params;
-  
-  // Check if the ID is valid
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({ message: "Invalid student registration ID" });
-  }
-
-  const { markAsRead } = req.body;
-  try {
-    const updated = await StudentRegistration.findByIdAndUpdate(
-      id,
-      { markAsRead },
-      { new: true }
-    );
-    if (!updated) {
-      return res
-        .status(404)
-        .json({ message: "Student registration not found" });
-    }
-
-    res.json({
-      message: "Student registration updated successfully",
-      data: updated,
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Failed to update student registration", error });
-  }
-});
+}); 
 
 module.exports = studentRegistrationRoute;
