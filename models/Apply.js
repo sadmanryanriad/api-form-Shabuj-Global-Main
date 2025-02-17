@@ -1,31 +1,26 @@
 const mongoose = require("mongoose");
 
 const applySchema = new mongoose.Schema({
-  name: {
-    type: String,
-  },
-  email: {
-    type: String,
-    required: true,
-  },
-  phoneNumber: {
-    type: String,
-  },
-  studyDestination: {
-    type: String,
-  },
-  studyYear: {
-    type: String,
-  },
-  studyIntake: {
-    type: String,
-  },
+  name: String,
+  email: { type: String, required: true },
+  phoneNumber: String,
+  studyDestination: String,
+  studyYear: String,
+  studyIntake: String,
   markAsRead: { type: Boolean, default: false },
-  note: {
-    type: String,
-  },
+  notes: [
+    {
+      note: String,
+      timestamp: { type: Date, default: Date.now }
+    }
+  ],
+  status: [
+    {
+      status: String,
+      timestamp: { type: Date, default: Date.now }
+    }
+  ]
 });
 
 const Apply = mongoose.model("Apply", applySchema);
-
 module.exports = Apply;
