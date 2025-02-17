@@ -21,6 +21,9 @@ const applySchema = new mongoose.Schema({
     type: String,
   },
   markAsRead: { type: Boolean, default: false },
+  note: {
+    type: String,
+  },
 });
 
 const Apply = mongoose.model("Apply", applySchema);

@@ -2,10 +2,10 @@ const Apply = require("../../models/Apply");
 
 const applyPatch = async (req, res) => {
   const { id } = req.params;
-  const { markAsRead } = req.body;
+  const { markAsRead, note } = req.body;
 
   try {
-    const updated = await Apply.findByIdAndUpdate(id, { markAsRead }, { new: true });
+    const updated = await Apply.findByIdAndUpdate(id, { markAsRead, note }, { new: true });
     if (!updated) return res.status(404).json({ message: "Application not found" });
 
     res.json({ message: "Application updated successfully", data: updated });

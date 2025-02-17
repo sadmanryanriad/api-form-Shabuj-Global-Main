@@ -18,6 +18,9 @@ const enquireSchema = new mongoose.Schema({
     default: Date.now,
   },
   markAsRead: { type: Boolean, default: false },
+  note: {
+    type: String,
+  },
 });
 
 const Enquire = mongoose.model("Enquire", enquireSchema);
