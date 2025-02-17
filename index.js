@@ -23,6 +23,7 @@ const corsOptions = {
     "http://develop.shabujglobal.com",
     "https://shabujglobal.com",
     "http://shabujglobal.com",
+    "https://sgelist.netlify.app",
   ],
   credentials: true,
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
