@@ -55,7 +55,8 @@ const getApplications = require("./controllers/getApplications");
 const applyPatch = require("./controllers/patches/applyPatch");
 const enquirePatch = require("./controllers/patches/enquirePatch");
 const studentRegistrationPatch = require("./controllers/patches/studentRegistrationPatch");
-
+// Import event routes
+const eventRoutes = require("./routes/eventRoutes");
 
 // Form API to handle subject, email, and enquire data
 app.post("/enquire", enquire);
@@ -75,6 +76,9 @@ app.patch("/applications/:id", applyPatch)
 app.use("/studentRegistration", studentRegistrationRoute);
 // To patch
 app.patch("/studentRegistration/:id", studentRegistrationPatch);
+
+// Events API
+app.use("/events", eventRoutes);
 
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
