@@ -6,41 +6,49 @@ const createEvent = async (req, res) => {
     const {
       title,
       description,
-      eventStartDateTime,
-      eventEndDateTime,
+      eventStartDate,     // Expecting date only (e.g., '2025-03-15')
+      eventStartTime,     // Expecting time only (e.g., '14:00')
+      eventEndDate,       // Expecting date only (e.g., '2025-03-15')
+      eventEndTime,       // Expecting time only (e.g., '16:00')
       place,
       organizer,
       category,
       isOnline,
       eventURL,
-      joinURL, 
-      eventImage, 
-      imageGallery, 
+      joinURL,
+      eventImage,
+      imageGallery,
     } = req.body;
+
+    // Validate required fields
+    if (!eventStartDate || !eventStartTime || !eventEndDate || !eventEndTime) {
+      return res.status(400).json({ error: "Start and End date & time are required." });
+    }
 
     const event = new Event({
       title,
       description,
-      eventStartDateTime,
-      eventEndDateTime,
+      eventStartDate: new Date(eventStartDate), // Convert the date string to a Date object
+      eventStartTime,
+      eventEndDate: new Date(eventEndDate),     // Convert the date string to a Date object
+      eventEndTime,
       place,
       organizer,
       category,
       isOnline,
       eventURL,
-      joinURL, 
-      eventImage, 
+      joinURL,
+      eventImage,
       imageGallery: Array.isArray(imageGallery) ? imageGallery : [],
     });
 
     await event.save();
     res.status(201).json({ message: "Event created successfully", event });
   } catch (error) {
-    res
-      .status(400)
-      .json({ error: "Error creating event", details: error.message });
+    res.status(400).json({ error: "Error creating event", details: error.message });
   }
 };
+
 
 
 // Get all events
