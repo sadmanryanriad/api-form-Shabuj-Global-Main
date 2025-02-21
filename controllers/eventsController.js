@@ -6,10 +6,10 @@ const createEvent = async (req, res) => {
     const {
       title,
       description,
-      eventStartDate,     // Expecting date only (e.g., '2025-03-15')
-      eventStartTime,     // Expecting time only (e.g., '14:00')
-      eventEndDate,       // Expecting date only (e.g., '2025-03-15')
-      eventEndTime,       // Expecting time only (e.g., '16:00')
+      eventStartDate, // Expecting date only (e.g., '2025-03-15')
+      eventStartTime, // Expecting time only (e.g., '14:00')
+      eventEndDate, // Expecting date only (e.g., '2025-03-15')
+      eventEndTime, // Expecting time only (e.g., '16:00')
       place,
       organizer,
       category,
@@ -22,7 +22,9 @@ const createEvent = async (req, res) => {
 
     // Validate required fields
     if (!eventStartDate || !eventStartTime || !eventEndDate || !eventEndTime) {
-      return res.status(400).json({ error: "Start and End date & time are required." });
+      return res
+        .status(400)
+        .json({ error: "Start and End date & time are required." });
     }
 
     const event = new Event({
@@ -30,7 +32,7 @@ const createEvent = async (req, res) => {
       description,
       eventStartDate: new Date(eventStartDate), // Convert the date string to a Date object
       eventStartTime,
-      eventEndDate: new Date(eventEndDate),     // Convert the date string to a Date object
+      eventEndDate: new Date(eventEndDate), // Convert the date string to a Date object
       eventEndTime,
       place,
       organizer,
@@ -45,11 +47,11 @@ const createEvent = async (req, res) => {
     await event.save();
     res.status(201).json({ message: "Event created successfully", event });
   } catch (error) {
-    res.status(400).json({ error: "Error creating event", details: error.message });
+    res
+      .status(400)
+      .json({ error: "Error creating event", details: error.message });
   }
 };
-
-
 
 // Get all events
 const getEvents = async (req, res) => {
@@ -76,6 +78,20 @@ const getEventById = async (req, res) => {
   }
 };
 
+// Get event by URL
+const getEventByURL = async (req, res) => {
+  try {
+    const event = await Event.findOne({ eventURL: req.params.url });
+    console.log(req.params.url);
+    if (!event) return res.status(404).json({ error: "Event not found" });
+    res.status(200).json(event);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Error fetching event by URL", details: error.message });
+  }
+};
+
 // Update event
 const updateEvent = async (req, res) => {
   try {
@@ -94,14 +110,20 @@ const updateEvent = async (req, res) => {
           { $push: { imageGallery: { $each: req.body.imageGallery } } },
           { new: true }
         );
-        return res.status(updatedEvent ? 200 : 404).json(updatedEvent || { error: "Event not found" });
+        return res
+          .status(updatedEvent ? 200 : 404)
+          .json(updatedEvent || { error: "Event not found" });
       } else {
         // Replace the entire gallery
         updateData.imageGallery = req.body.imageGallery;
       }
     }
 
-    const updatedEvent = await Event.findByIdAndUpdate(req.params.id, updateData, { new: true });
+    const updatedEvent = await Event.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
+    );
 
     if (!updatedEvent) {
       return res.status(404).json({ error: "Event not found" });
@@ -109,11 +131,11 @@ const updateEvent = async (req, res) => {
 
     res.status(200).json(updatedEvent);
   } catch (error) {
-    res.status(500).json({ error: "Error updating event", details: error.message });
+    res
+      .status(500)
+      .json({ error: "Error updating event", details: error.message });
   }
 };
-
-
 
 // Delete event
 const deleteEvent = async (req, res) => {
@@ -135,4 +157,5 @@ module.exports = {
   getEventById,
   updateEvent,
   deleteEvent,
+  getEventByURL,
 };
