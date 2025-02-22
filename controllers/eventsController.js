@@ -30,9 +30,9 @@ const createEvent = async (req, res) => {
     const event = new Event({
       title,
       description,
-      eventStartDate: new Date(eventStartDate), // Convert the date string to a Date object
+      eventStartDate,
       eventStartTime,
-      eventEndDate: new Date(eventEndDate), // Convert the date string to a Date object
+      eventEndDate, 
       eventEndTime,
       place,
       organizer,
