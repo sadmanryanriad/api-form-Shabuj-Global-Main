@@ -151,6 +151,21 @@ const deleteEvent = async (req, res) => {
   }
 };
 
+// Check if eventURL is unique
+const checkEventURL = async (req, res) => {
+  try {
+    const event = await Event.findOne({ eventURL: req.params.eventURL });
+
+    if (event) {
+      return res.status(200).json({ exists: true, message: "URL already taken" });
+    }
+
+    res.status(200).json({ exists: false, message: "URL available" });
+  } catch (error) {
+    res.status(500).json({ error: "Error checking URL", details: error.message });
+  }
+};
+
 module.exports = {
   createEvent,
   getEvents,
@@ -158,4 +173,5 @@ module.exports = {
   updateEvent,
   deleteEvent,
   getEventByURL,
+  checkEventURL,
 };
