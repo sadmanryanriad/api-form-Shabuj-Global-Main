@@ -6,10 +6,10 @@ const createEvent = async (req, res) => {
     const {
       title,
       description,
-      eventStartDate, // Expecting date only (e.g., '2025-03-15')
-      eventStartTime, // Expecting time only (e.g., '14:00')
-      eventEndDate, // Expecting date only (e.g., '2025-03-15')
-      eventEndTime, // Expecting time only (e.g., '16:00')
+      eventStartDate, 
+      eventStartTime, 
+      eventEndDate, 
+      eventEndTime, 
       place,
       organizer,
       category,
@@ -154,7 +154,14 @@ const deleteEvent = async (req, res) => {
 // Check if eventURL is unique
 const checkEventURL = async (req, res) => {
   try {
-    const event = await Event.findOne({ eventURL: req.params.eventURL });
+    const eventURL = req.params.eventURL.trim().toLowerCase();
+
+    // Validate manually (if using it before saving in DB)
+    if (!/^[a-z1-9]+(-[a-z1-9]+)*$/.test(eventURL)) {
+      return res.status(400).json({ exists: false, message: "Invalid format! Use only a-z, 1-9, and hyphens (-) between words." });
+    }
+
+    const event = await Event.findOne({ eventURL });
 
     if (event) {
       return res.status(200).json({ exists: true, message: "URL already taken" });

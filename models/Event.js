@@ -15,7 +15,19 @@ const eventSchema = new mongoose.Schema(
     eventEndTime: { type: String, trim: true }, // Time part of the event end
     organizer: { type: String, trim: true }, // Event host (optional)
     category: { type: String, trim: true }, // Workshop, Seminar, etc. (optional)
-    eventURL: { type: String, trim: true, unique: true, required: true }, // Unique event URL (Required)
+    eventURL: { 
+      type: String, 
+      required: true, 
+      trim: true, 
+      unique: true,
+      lowercase: true, 
+      validate: {
+        validator: function (value) {
+          return /^[a-z1-9]+(-[a-z1-9]+)*$/.test(value);
+        },
+        message: "eventURL can only contain lowercase letters, numbers (1-9), and hyphens (-) between words.",
+      },
+    },
   },
   { timestamps: true } // Automatically adds 'createdAt' and 'updatedAt'
 );
