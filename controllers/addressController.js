@@ -87,6 +87,34 @@ exports.deleteOffice = async (req, res) => {
     }
 };
 
+// Get office counts for each country with a total office count
+exports.getOfficeCounts = async (req, res) => {
+    try {
+        // Fetch all offices data
+        const allOffices = await Office.find();
+
+        if (!allOffices || allOffices.length === 0) {
+            return res.status(404).json({ message: "No offices found" });
+        }
+
+        // Calculate office count for each country dynamically
+        const officeCounts = allOffices.map(office => ({
+            country: office.country,
+            officeCount: office.offices.length
+        }));
+
+        // Calculate the total office count
+        const totalOffices = officeCounts.reduce((sum, office) => sum + office.officeCount, 0);
+
+        return res.json({
+            totalOffices,
+            officeCounts
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
 // Get all offices or a specific country's offices based on query params
 exports.getOfficesByCountry = async (req, res) => {
     try {

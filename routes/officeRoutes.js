@@ -11,6 +11,9 @@ router.patch("/:officeId", addressController.updateOffice);
 // Delete an office from a country
 router.delete("/:officeId", addressController.deleteOffice);
 
+// Get Office counts for each country
+router.get("/getOfficeCounts", addressController.getOfficeCounts );
+
 // Get all offices of a country, or specific office by officeId
 router.get("/", addressController.getOfficesByCountry); // Accepting country as query param
 
