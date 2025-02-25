@@ -57,6 +57,8 @@ const enquirePatch = require("./controllers/patches/enquirePatch");
 const studentRegistrationPatch = require("./controllers/patches/studentRegistrationPatch");
 // Import event routes
 const eventRoutes = require("./routes/eventRoutes");
+// Import office routes
+const officeRoutes = require("./routes/officeRoutes");
 
 // Form API to handle subject, email, and enquire data
 app.post("/enquire", enquire);
@@ -79,6 +81,9 @@ app.patch("/studentRegistration/:id", studentRegistrationPatch);
 
 // Events API
 app.use("/events", eventRoutes);
+
+// Base route for offices
+app.use("/offices", officeRoutes);
 
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
