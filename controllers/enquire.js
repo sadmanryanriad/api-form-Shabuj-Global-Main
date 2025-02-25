@@ -2,11 +2,12 @@ const Enquire = require("../models/Enquire");
 const sendEmail = require("../utils/sendEmail");
 
 const enquire = async (req, res) => {
-  const { subject, email, message } = req.body;
+  const { name, subject, email, message } = req.body;
 
   try {
     // Create a new enquire document
     const newEnquire = new Enquire({
+      name,
       subject,
       email,
       message,
