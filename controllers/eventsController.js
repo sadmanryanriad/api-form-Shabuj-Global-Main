@@ -157,7 +157,7 @@ const checkEventURL = async (req, res) => {
     const eventURL = req.params.eventURL.trim().toLowerCase();
 
     // Validate manually (if using it before saving in DB)
-    if (!/^[a-z1-9]+(-[a-z1-9]+)*$/.test(eventURL)) {
+    if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(eventURL)) {
       return res.status(400).json({ exists: false, message: "Invalid format! Use only a-z, 1-9, and hyphens (-) between words." });
     }
 

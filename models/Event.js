@@ -23,7 +23,7 @@ const eventSchema = new mongoose.Schema(
       lowercase: true, 
       validate: {
         validator: function (value) {
-          return /^[a-z1-9]+(-[a-z1-9]+)*$/.test(value);
+          return /^[a-z0-9]+(-[a-z0-9]+)*$/.test(value);
         },
         message: "eventURL can only contain lowercase letters, numbers (1-9), and hyphens (-) between words.",
       },
