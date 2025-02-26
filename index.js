@@ -61,6 +61,8 @@ const eventRoutes = require("./routes/eventRoutes");
 const officeRoutes = require("./routes/officeRoutes");
 // Import newsletter routes
 const newsletterRoutes = require("./routes/newsletterRoutes");
+// Import modal Registration Routes routes
+const modalRegistrationRoutes = require("./routes/modalRegistration");
 
 // Form API to handle subject, email, and enquire data
 app.post("/enquire", enquire);
@@ -89,6 +91,9 @@ app.use("/offices", officeRoutes);
 
 // Use Routes
 app.use("/newsletter", newsletterRoutes)
+
+// Modal Registration routes
+app.use("/modal-registration", modalRegistrationRoutes);
 
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
