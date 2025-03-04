@@ -23,6 +23,8 @@ const corsOptions = {
     "http://develop.shabujglobal.com",
     "https://shabujglobal.com",
     "http://shabujglobal.com",
+    "https://www.shabujglobal.com",
+    "http://www.shabujglobal.com",
     "https://sgelist.netlify.app",
   ],
   credentials: true,
@@ -45,7 +47,7 @@ app.get("/", (req, res) => {
   res.send("<h1>Home Page</h1> <p>api-form-Shabuj-Global-Main</p>");
 });
 
-// Import 
+// Import
 const enquire = require("./controllers/enquire");
 const apply = require("./controllers/apply");
 const studentRegistrationRoute = require("./routes/studentRegistration");
@@ -78,7 +80,7 @@ app.post("/apply", apply);
 // API to get all applications
 app.get("/applications", getApplications);
 // To patch
-app.patch("/applications/:id", applyPatch)
+app.patch("/applications/:id", applyPatch);
 
 //Student Registration Route
 app.use("/studentRegistration", studentRegistrationRoute);
@@ -92,7 +94,7 @@ app.use("/events", eventRoutes);
 app.use("/offices", officeRoutes);
 
 // Use Routes
-app.use("/newsletter", newsletterRoutes)
+app.use("/newsletter", newsletterRoutes);
 
 // Blog routes
 app.use("/blogs", blogRoutes);
