@@ -4,7 +4,10 @@ const eventSchema = new mongoose.Schema(
   {
     title: { type: String, required: true, trim: true },
     eventImage: { type: String, trim: true }, // URL of event image (optional)
+    eventLargeImage: { type: String, trim: true }, // Large screen image
+    eventPhoneImage: { type: String, trim: true }, // Mobile screen image
     imageGallery: [{ type: String, trim: true }], // Array of image URLs
+    videoURL: { type: String, trim: true }, // YouTube/Vimeo/Twitch/facebook/dailyMotion/Local URL
     description: { type: String, trim: true }, // Description (optional)
     place: { type: String, trim: true }, // Venue or online (optional)
     isOnline: { type: Boolean, default: false }, // Online or in-person

@@ -17,6 +17,9 @@ const createEvent = async (req, res) => {
       eventURL,
       joinURL,
       eventImage,
+      eventLargeImage,
+      eventPhoneImage,
+      videoURL,
       imageGallery,
     } = req.body;
 
@@ -41,6 +44,9 @@ const createEvent = async (req, res) => {
       eventURL,
       joinURL,
       eventImage,
+      eventLargeImage,
+      eventPhoneImage,
+      videoURL,
       imageGallery: Array.isArray(imageGallery) ? imageGallery : [],
     });
 
