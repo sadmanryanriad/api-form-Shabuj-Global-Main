@@ -134,3 +134,19 @@ exports.deleteBlogByBlogURL = async (req, res) => {
     }
 };
 
+// Fetch Latest Blogs (sorted by creation date, limit optional)
+exports.getLatestBlogs = async (req, res) => {
+    try {
+        const limit = parseInt(req.params.limit) || 10; // Default limit: 10
+        const blogs = await Blog.find()
+            .sort({ createdAt: -1 }) // Sort by newest first
+            .limit(limit)
+            .select("-__v");
+
+        res.status(200).json({ count: blogs.length, blogs });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+
