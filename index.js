@@ -67,6 +67,8 @@ const newsletterRoutes = require("./routes/newsletterRoutes");
 const modalRegistrationRoutes = require("./routes/modalRegistration");
 // Import blog routes
 const blogRoutes = require("./routes/blogRoutes");
+// Import welcome modal routes
+const welcomeModalRoutes = require("./routes/welcomeModalRoutes");
 
 // Form API to handle subject, email, and enquire data
 app.post("/enquire", enquire);
@@ -98,6 +100,9 @@ app.use("/newsletter", newsletterRoutes);
 
 // Blog routes
 app.use("/blogs", blogRoutes);
+
+// Welcome modal Routes
+app.use("/welcome-modal", welcomeModalRoutes); 
 
 // Modal Registration routes
 app.use("/modal-registration", modalRegistrationRoutes);
