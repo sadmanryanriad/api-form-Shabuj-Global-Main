@@ -5,7 +5,7 @@ exports.getWelcomeModal = async (req, res) => {
         const welcomeModal = await WelcomeModal.findOne();
 
         if (!welcomeModal) {
-            return res.status(404).json({ message: "Welcome Modal not found" });
+            return res.status(404).json({ exist: false, message: "Welcome Modal not found in the database" });
         }
 
         res.status(200).json({ data: welcomeModal });
