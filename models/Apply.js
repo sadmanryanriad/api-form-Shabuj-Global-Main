@@ -8,6 +8,7 @@ const applySchema = new mongoose.Schema({
   studyYear: String,
   studyIntake: String,
   markAsRead: { type: Boolean, default: false },
+  createdAt: { type: Date, default: Date.now },
   notes: [
     {
       note: String,
