@@ -69,6 +69,8 @@ const modalRegistrationRoutes = require("./routes/modalRegistration");
 const blogRoutes = require("./routes/blogRoutes");
 // Import welcome modal routes
 const welcomeModalRoutes = require("./routes/welcomeModalRoutes");
+// Import Export routes
+const exportRoutes = require("./routes/exportRoutes");
 
 // Form API to handle subject, email, and enquire data
 app.post("/enquire", enquire);
@@ -106,6 +108,10 @@ app.use("/welcome-modal", welcomeModalRoutes);
 
 // Modal Registration routes
 app.use("/modal-registration", modalRegistrationRoutes);
+
+// Export routes
+app.use("/export", exportRoutes);
+
 
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
