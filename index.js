@@ -4,7 +4,7 @@ const cors = require("cors");
 require("dotenv").config();
 
 const app = express();
-const port = 5005;
+const port = 3000;
 const uri = process.env.MONGODB_URI;
 
 //middlewares
@@ -26,6 +26,7 @@ const corsOptions = {
     "https://www.shabujglobal.com",
     "http://www.shabujglobal.com",
     "https://sgelist.netlify.app",
+    "https://sge-next-3.vercel.app",
   ],
   credentials: true,
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
@@ -104,14 +105,13 @@ app.use("/newsletter", newsletterRoutes);
 app.use("/blogs", blogRoutes);
 
 // Welcome modal Routes
-app.use("/welcome-modal", welcomeModalRoutes); 
+app.use("/welcome-modal", welcomeModalRoutes);
 
 // Modal Registration routes
 app.use("/modal-registration", modalRegistrationRoutes);
 
 // Export routes
 app.use("/export", exportRoutes);
-
 
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
