@@ -1,12 +1,41 @@
 const Apply = require("../models/Apply");
 const sendEmail = require("../utils/sendEmail");
+const axios = require("axios");
 
 const apply = async (req, res) => {
-  const { name, email, phoneNumber, studyDestination, studyYear, studyIntake } =
-    req.body;
+  const {
+    name,
+    email,
+    phoneNumber,
+    studyDestination,
+    studyYear,
+    studyIntake,
+    recaptchaToken,
+  } = req.body;
 
+  // Verify reCAPTCHA token
   try {
-    // Create a new Apply document
+    const secretKey = process.env.RECAPTCHA_SECRET_KEY;
+    const verifyUrl = "https://www.google.com/recaptcha/api/siteverify";
+
+    const { data } = await axios.post(
+      verifyUrl,
+      new URLSearchParams({
+        secret: secretKey,
+        response: recaptchaToken,
+      })
+    );
+
+    if (!data.success) {
+      return res.status(400).json({ message: "reCAPTCHA verification failed" });
+    }
+  } catch (verifyErr) {
+    console.error("reCAPTCHA error:", verifyErr);
+    return res.status(500).json({ message: "Error verifying reCAPTCHA" });
+  }
+
+  // Proceed with application save
+  try {
     const newApply = new Apply({
       name,
       email,
@@ -22,7 +51,6 @@ const apply = async (req, res) => {
       message: "Apply created successfully",
     });
 
-    // Send email notification
     const mailTo = process.env.SEND_EMAIL_TO;
     const mailSubject = "New Application Received";
     const mailText = `New application received from ${name}`;
@@ -44,14 +72,10 @@ const apply = async (req, res) => {
         </div>
       </div>
     `;
-    // Send the email in the background
+
     sendEmail(mailTo, mailSubject, mailText, mailHtml)
-      .then(() => {
-        console.log("Email sent successfully!");
-      })
-      .catch((error) => {
-        console.error("Error sending email: ", error);
-      });
+      .then(() => console.log("Email sent successfully!"))
+      .catch((error) => console.error("Error sending email: ", error));
   } catch (error) {
     console.error("Error processing apply info: ", error);
     res.status(500).send("Error saving the apply info: " + error.message);
