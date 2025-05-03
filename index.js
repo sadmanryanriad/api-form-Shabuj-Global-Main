@@ -4,7 +4,7 @@ const cors = require("cors");
 require("dotenv").config();
 
 const app = express();
-const port = 3000;
+const port = 5005;
 const uri = process.env.MONGODB_URI;
 
 //middlewares
