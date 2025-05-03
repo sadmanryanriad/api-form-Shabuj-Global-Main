@@ -11,7 +11,16 @@ const apply = async (req, res) => {
     studyYear,
     studyIntake,
     recaptchaToken,
+    message, // <- Honeypot field
   } = req.body;
+
+    // Honeypot bot detection
+    if (message && message.trim().length > 0) {
+      console.warn("Bot detected via honeypot. Ignoring submission.");
+      console.log(`Honeypot triggered by IP: ${req.ip} - Time: ${new Date().toISOString()}`);
+      // pretend it's successful
+      return res.status(200).json({ message: "Apply created successfully bro 😉" });
+    }
 
   // Verify reCAPTCHA token
   try {
