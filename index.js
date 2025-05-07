@@ -72,6 +72,8 @@ const blogRoutes = require("./routes/blogRoutes");
 const welcomeModalRoutes = require("./routes/welcomeModalRoutes");
 // Import Export routes
 const exportRoutes = require("./routes/exportRoutes");
+// Import expo registration routes
+const expoRegistrationRoute = require("./routes/expoRegistration");
 
 // Form API to handle subject, email, and enquire data
 app.post("/enquire", enquire);
@@ -87,7 +89,7 @@ app.get("/applications", getApplications);
 // To patch
 app.patch("/applications/:id", applyPatch);
 
-//Student Registration Route
+//Student Registration Route  // Remove this line in future. when we move onto our new repo and no longer need this route
 app.use("/studentRegistration", studentRegistrationRoute);
 // To patch
 app.patch("/studentRegistration/:id", studentRegistrationPatch);
@@ -112,6 +114,9 @@ app.use("/modal-registration", modalRegistrationRoutes);
 
 // Export routes
 app.use("/export", exportRoutes);
+
+// API to get all expo registrations
+app.use("/expoRegistration", expoRegistrationRoute);
 
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
