@@ -49,11 +49,11 @@ const ExpoRegistration = new mongoose.Schema(
     academicHistory: {
       type: [
         {
-          qualification: { type: String, required: true },
-          year: { type: String, required: true },
-          grade: { type: String, required: true },
-          subject: { type: String, required: true },
-          institution: { type: String, required: true },
+          qualification: { type: String},
+          year: { type: String },
+          grade: { type: String },
+          subject: { type: String },
+          institution: { type: String },
         }
       ],
       default: [],
