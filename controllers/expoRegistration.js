@@ -73,13 +73,13 @@ exports.getExpoRegistrations = async (req, res) => {
         { header: "Full Name", key: "fullName", width: 30 },
         { header: "Email", key: "email", width: 30 },
         { header: "Phone Number", key: "phoneNumber", width: 20 },
-        { header: "Country Code", key: "countryCode", width: 10 },
-        { header: "Citizenship", key: "citizenship", width: 20 },
-        { header: "Residence", key: "residence", width: 20 },
+        // { header: "Country Code", key: "countryCode", width: 10 },
+        { header: "Citizenship", key: "citizenship", width: 15 },
+        { header: "Residence", key: "residence", width: 15 },
         { header: "Preferred Study Level", key: "preferredStudyLevel", width: 20 },
-        { header: "Study Destinations", key: "studyDestinations", width: 50 },
-        { header: "Academic History", key: "academicHistory", width: 50 },
-        { header: "Created At", key: "createdAt", width: 25 },
+        { header: "Study Destinations", key: "studyDestinations", width: 30 },
+        { header: "Academic History", key: "academicHistory", width: 30 },
+        { header: "Created At", key: "createdAt", width: 20 },
       ];
   
       // Add data rows to the worksheet
@@ -88,7 +88,7 @@ exports.getExpoRegistrations = async (req, res) => {
           fullName: registration.fullName,
           email: registration.email,
           phoneNumber: registration.phoneNumber,
-          countryCode: registration.countryCode,
+          // countryCode: registration.countryCode,
           citizenship: registration.citizenship,
           residence: registration.residence,
           preferredStudyLevel: registration.preferredStudyLevel,
