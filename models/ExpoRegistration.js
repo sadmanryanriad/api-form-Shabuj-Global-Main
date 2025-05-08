@@ -45,16 +45,16 @@ const ExpoRegistration = new mongoose.Schema(
       type: String,
     },
 
-    // Step 3: Academic History 
+    // Step 3: Academic History
     academicHistory: {
       type: [
         {
-          qualification: { type: String},
+          qualification: { type: String },
           year: { type: String },
           grade: { type: String },
           subject: { type: String },
           institution: { type: String },
-        }
+        },
       ],
       default: [],
     },
@@ -79,7 +79,32 @@ const ExpoRegistration = new mongoose.Schema(
     workDetails: {
       type: String,
     },
-
+    eventSourceLink: {
+      type: String,
+      trim: true,
+    },
+    eventId: {
+      type: String,
+      trim: true,
+    },
+    eventSourceName: {
+      type: String,
+      trim: true,
+    },
+    referralCode: {
+      type: String,
+      trim: true,
+    },
+    additionalInfo: {
+      type: [
+        {
+          label: { type: String, trim: true },
+          value: { type: mongoose.Schema.Types.Mixed },
+        },
+      ],
+      default: [],
+    },
+    
     // Optional: future-proof
     consentToTerms: {
       type: Boolean,
@@ -89,4 +114,39 @@ const ExpoRegistration = new mongoose.Schema(
   { timestamps: true }
 );
 
+
 module.exports = mongoose.model("ExpoRegistration", ExpoRegistration);
+
+
+
+
+
+
+
+
+
+
+
+// "additionalInfo": [
+//   {
+//     "label": "How did you hear about the event?",
+//     "value": "Facebook"
+//   },
+//   {
+//     "label": "Are you bringing any guests?",
+//     "value": 2
+//   },
+//   {
+//     "label": "Special requirements",
+//     "value": {
+//       "dietary": "Vegetarian",
+//       "accessibility": true
+//     }
+//   },
+//   {
+//     "label": "Follow-up Preferences",
+//     "value": ["Email", "Phone"]
+//   }
+// ]
+
+
