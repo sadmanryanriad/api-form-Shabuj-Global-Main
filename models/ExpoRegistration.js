@@ -117,7 +117,7 @@ const ExpoRegistration = new mongoose.Schema(
 // Indexes
 ExpoRegistration.index({ createdAt: -1 });
 ExpoRegistration.index({ eventId: 1 });
-ExpoRegistration.index({ eventSourceLink: 1 });
+// ExpoRegistration.index({ eventSourceLink: 1 });
 ExpoRegistration.index({ referralCode: 1 });
 
 module.exports = mongoose.model("ExpoRegistration", ExpoRegistration);
