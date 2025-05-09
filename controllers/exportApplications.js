@@ -3,7 +3,21 @@ const Apply = require("../models/Apply");
 
 exports.exportApplications = async (req, res) => {
   try {
-    const applications = await Apply.find().lean();
+    const { from, to } = req.query;
+    const filter = {};
+
+    // Build date filter
+    if (from || to) {
+      filter.createdAt = {};
+      if (from) filter.createdAt.$gte = new Date(from);
+      if (to) {
+        const toDate = new Date(to);
+        toDate.setHours(23, 59, 59, 999);
+        filter.createdAt.$lte = toDate;
+      }
+    }
+
+    const applications = await Apply.find(filter).sort({ createdAt: -1 }).lean();
 
     if (!applications.length) {
       return res.status(404).json({ message: "No applications found" });
@@ -12,47 +26,49 @@ exports.exportApplications = async (req, res) => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Applications");
 
-    // Define headers
     worksheet.columns = [
-      { header: "Name", key: "name", width: 20 },
-      { header: "Email", key: "email", width: 25 },
-      { header: "Phone Number", key: "phoneNumber", width: 15 },
-      { header: "Study Destination", key: "studyDestination", width: 20 },
+      { header: "Name", key: "name", width: 25 },
+      { header: "Email", key: "email", width: 30 },
+      { header: "Phone Number", key: "phoneNumber", width: 20 },
+      { header: "Study Destination", key: "studyDestination", width: 25 },
       { header: "Study Year", key: "studyYear", width: 15 },
       { header: "Study Intake", key: "studyIntake", width: 15 },
-      // { header: "Created At", key: "createdAt", width: 20 },
+      { header: "Created At", key: "createdAt", width: 25 }
     ];
 
-    // Add rows with correct date formatting
-    applications.forEach((application) => {
+    applications.forEach((app) => {
       worksheet.addRow({
-        ...application,
-        createdAt: application.createdAt
-          ? new Date(application.createdAt).toLocaleString("en-GB", {
+        name: app.name || "",
+        email: app.email || "",
+        phoneNumber: app.phoneNumber || "",
+        studyDestination: app.studyDestination || "",
+        studyYear: app.studyYear || "",
+        studyIntake: app.studyIntake || "",
+        createdAt: app.createdAt
+          ? new Date(app.createdAt).toLocaleString("en-GB", {
               day: "2-digit",
               month: "2-digit",
               year: "numeric",
               hour: "2-digit",
-              minute: "2-digit",
+              minute: "2-digit"
             })
-          : "N/A",
+          : "N/A"
       });
     });
 
-    // Get the current date and format it
-    const currentDate = new Date().toISOString().split("T")[0]; // Format as YYYY-MM-DD
+    const dateLabel = from && to
+      ? `from_${from}_to_${to}`
+      : new Date().toISOString().split("T")[0];
 
-    // Set response headers for file download, including the formatted date in the filename
     res.setHeader(
       "Content-Type",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     );
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename="Applications_${currentDate}.xlsx"`
+      `attachment; filename="Applications_${dateLabel}.xlsx"`
     );
 
-    // Generate and send the workbook
     await workbook.xlsx.write(res);
     res.end();
   } catch (error) {
