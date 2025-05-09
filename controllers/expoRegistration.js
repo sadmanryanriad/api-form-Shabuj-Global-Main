@@ -5,8 +5,21 @@ const axios = require("axios");
 // POST: Create a new expo registration
 exports.createExpoRegistration = async (req, res) => {
   try {
-    const { recaptchaToken, ...formData } = req.body;
-    
+    const { recaptchaToken, message, ...formData } = req.body;
+    // Honeypot bot detection
+    if (message && message.trim().length > 0) {
+      console.warn("Bot detected via honeypot. Ignoring submission.");
+      console.log(
+        `Honeypot triggered by IP: ${
+          req.ip
+        } - Time: ${new Date().toISOString()}`
+      );
+      // pretend it's successful
+      return res
+        .status(200)
+        .json({ message: "Apply created successfully bro 😉" });
+    }
+
     // Verify reCAPTCHA token
     try {
       const secretKey = process.env.RECAPTCHA_SECRET_KEY;
@@ -40,7 +53,6 @@ exports.createExpoRegistration = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-
 
 // GET: Fetch expo registrations (with optional filtering by date range)
 //http://localhost:5005/expoRegistration?from=2025-04-1&to=2025-05-09&eventId=agharghrghag&referralCode=SGE2025&eventSourceLink=https://shabujglobal.com/events/expo-uk-dhaka
