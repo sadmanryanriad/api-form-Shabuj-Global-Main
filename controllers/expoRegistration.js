@@ -1,10 +1,36 @@
 const ExpoRegistration = require("../models/ExpoRegistration");
 const ExcelJS = require("exceljs");
+const axios = require("axios");
 
 // POST: Create a new expo registration
 exports.createExpoRegistration = async (req, res) => {
   try {
-    const newEntry = new ExpoRegistration(req.body);
+    const { recaptchaToken, ...formData } = req.body;
+    
+    // Verify reCAPTCHA token
+    try {
+      const secretKey = process.env.RECAPTCHA_SECRET_KEY;
+      const verifyUrl = "https://www.google.com/recaptcha/api/siteverify";
+      const { data } = await axios.post(
+        verifyUrl,
+        new URLSearchParams({
+          secret: secretKey,
+          response: recaptchaToken,
+        })
+      );
+
+      if (!data.success) {
+        return res
+          .status(400)
+          .json({ message: "reCAPTCHA verification failed" });
+      }
+    } catch (verifyErr) {
+      console.error("reCAPTCHA error:", verifyErr);
+      return res.status(500).json({ message: "Error verifying reCAPTCHA" });
+    }
+
+    // Save only valid form data (excluding recaptchaToken)
+    const newEntry = new ExpoRegistration(formData);
     await newEntry.save();
     res
       .status(201)
@@ -14,6 +40,7 @@ exports.createExpoRegistration = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
 
 // GET: Fetch expo registrations (with optional filtering by date range)
 //http://localhost:5005/expoRegistration?from=2025-04-1&to=2025-05-09&eventId=agharghrghag&referralCode=SGE2025&eventSourceLink=https://shabujglobal.com/events/expo-uk-dhaka
