@@ -16,26 +16,26 @@ exports.createExpoRegistration = async (req, res) => {
 };
 
 // GET: Fetch expo registrations (with optional filtering by date range)
-//http://localhost:5005/expoRegistration?from=2025-04-20&to=2025-05-08
+//http://localhost:5005/expoRegistration?from=2025-04-1&to=2025-05-09&eventId=agharghrghag&referralCode=SGE2025&eventSourceLink=https://shabujglobal.com/events/expo-uk-dhaka
 exports.getExpoRegistrations = async (req, res) => {
   try {
-    const { from, to } = req.query;
+    const { from, to, eventId, eventSourceLink, referralCode } = req.query;
     const filter = {};
 
-    // console.log(from, to);
-
+    // Date range filter
     if (from || to) {
       filter.createdAt = {};
-
       if (from) filter.createdAt.$gte = new Date(from);
-
       if (to) {
         const toDate = new Date(to);
-        // Set 'to' the end of the day (23:59:59.999)
         toDate.setHours(23, 59, 59, 999);
         filter.createdAt.$lte = toDate;
       }
     }
+
+    if (eventId) filter.eventId = eventId;
+    if (eventSourceLink) filter.eventSourceLink = eventSourceLink;
+    if (referralCode) filter.referralCode = referralCode;
 
     const data = await ExpoRegistration.find(filter).sort({ createdAt: -1 });
     res.status(200).json({ total: data.length, data });
