@@ -74,6 +74,8 @@ const welcomeModalRoutes = require("./routes/welcomeModalRoutes");
 const exportRoutes = require("./routes/exportRoutes");
 // Import expo registration routes
 const expoRegistrationRoute = require("./routes/expoRegistration");
+// Import live feedback routes
+const liveFeedbackRoute = require("./routes/liveFeedback");
 
 // Form API to handle subject, email, and enquire data
 app.post("/enquire", enquire);
@@ -117,6 +119,9 @@ app.use("/export", exportRoutes);
 
 // API to get all expo registrations
 app.use("/expoRegistration", expoRegistrationRoute);
+
+// API to handle live feedback
+app.use("/live-feedback", liveFeedbackRoute);
 
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
