@@ -55,7 +55,6 @@ exports.createExpoRegistration = async (req, res) => {
 };
 
 // GET: Fetch expo registrations (with optional filtering by date range)
-//http://localhost:5005/expoRegistration?from=2025-04-1&to=2025-05-09&eventId=agharghrghag&referralCode=SGE2025&eventSourceLink=https://shabujglobal.com/events/expo-uk-dhaka
 exports.getExpoRegistrations = async (req, res) => {
   try {
     const { from, to, eventId, eventSourceLink, referralCode } = req.query;
@@ -87,7 +86,7 @@ exports.getExpoRegistrations = async (req, res) => {
 // Export Expo Registrations to Excel
 exports.exportExpoRegistrations = async (req, res) => {
   try {
-    const { from, to } = req.query;
+    const { from, to, eventSourceLink  } = req.query;
     const filter = {};
 
     if (from || to) {
@@ -100,6 +99,9 @@ exports.exportExpoRegistrations = async (req, res) => {
         toDate.setHours(23, 59, 59, 999); // Set 'to' the end of the day
         filter.createdAt.$lte = toDate;
       }
+    }
+    if (eventSourceLink) {
+      filter.eventSourceLink = eventSourceLink;
     }
 
     // Fetch the expo registrations
