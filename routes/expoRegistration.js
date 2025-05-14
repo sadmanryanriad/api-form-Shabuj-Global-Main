@@ -10,6 +10,6 @@ const {
 router.post("/", createExpoRegistration);
 router.get("/", getExpoRegistrations);
 router.get("/export", exportExpoRegistrations); 
-router.get("/export/separateByEvent", exportByEvent);
+router.get("/export/separateByEvents", exportByEvent);
 
 module.exports = router;

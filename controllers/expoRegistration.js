@@ -181,7 +181,7 @@ exports.exportExpoRegistrations = async (req, res) => {
 exports.exportByEvent = async (req, res) => {
   const { from, to } = req.query;
   const filter = {};
-  console.log(from, to);
+
   if (from || to) {
     filter.createdAt = {};
     if (from) filter.createdAt.$gte = new Date(from);
@@ -201,8 +201,14 @@ exports.exportByEvent = async (req, res) => {
     grouped[key].push(r);
   });
 
+  //file name set korte
+  const fromLabel = from ? new Date(from).toISOString().split("T")[0] : "start";
+  const toLabel = to ? new Date(to).toISOString().split("T")[0] : "now";
+  const dateLabel = `_from_${fromLabel}_to_${toLabel}`;
+  
   res.setHeader("Content-Type", "application/zip");
-  res.setHeader("Content-Disposition", `attachment; filename="Expo_By_Event.zip"`);
+  res.setHeader("Content-Disposition", `attachment; filename="Expo_By_Event${dateLabel}.zip"`);
+  
 
   const archive = archiver("zip");
   archive.pipe(res);
@@ -248,7 +254,8 @@ exports.exportByEvent = async (req, res) => {
     });
 
     const buffer = await workbook.xlsx.writeBuffer();
-    archive.append(buffer, { name: `${event}.xlsx` });
+    archive.append(buffer, { name: `${event}${dateLabel}.xlsx` });
+
   }
 
   await archive.finalize();
