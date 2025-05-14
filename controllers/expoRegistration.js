@@ -1,6 +1,7 @@
 const ExpoRegistration = require("../models/ExpoRegistration");
 const ExcelJS = require("exceljs");
 const axios = require("axios");
+const archiver = require("archiver");
 
 // POST: Create a new expo registration
 exports.createExpoRegistration = async (req, res) => {
@@ -175,4 +176,80 @@ exports.exportExpoRegistrations = async (req, res) => {
     console.error("Error exporting expo registrations:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
+};
+
+exports.exportByEvent = async (req, res) => {
+  const { from, to } = req.query;
+  const filter = {};
+  console.log(from, to);
+  if (from || to) {
+    filter.createdAt = {};
+    if (from) filter.createdAt.$gte = new Date(from);
+    if (to) {
+      const toDate = new Date(to);
+      toDate.setHours(23, 59, 59, 999);
+      filter.createdAt.$lte = toDate;
+    }
+  }
+
+  const registrations = await ExpoRegistration.find(filter).lean();
+  const grouped = {};
+
+  registrations.forEach((r) => {
+    const key = r.eventSourceLink || "unknown_event";
+    grouped[key] = grouped[key] || [];
+    grouped[key].push(r);
+  });
+
+  res.setHeader("Content-Type", "application/zip");
+  res.setHeader("Content-Disposition", `attachment; filename="Expo_By_Event.zip"`);
+
+  const archive = archiver("zip");
+  archive.pipe(res);
+
+  for (const [event, rows] of Object.entries(grouped)) {
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Expo Registrations");
+
+    sheet.columns = [
+      { header: "Full Name", key: "fullName", width: 30 },
+      { header: "Email", key: "email", width: 30 },
+      { header: "Phone Number", key: "phoneNumber", width: 20 },
+      { header: "Citizenship", key: "citizenship", width: 15 },
+      { header: "Residence", key: "residence", width: 15 },
+      { header: "Preferred Study Level", key: "preferredStudyLevel", width: 20 },
+      { header: "Study Destinations", key: "studyDestinations", width: 30 },
+      { header: "Academic History", key: "academicHistory", width: 30 },
+      { header: "Created At", key: "createdAt", width: 25 },
+      { header: "Event Source Name", key: "eventSourceName", width: 25 },
+      { header: "Event Source Link", key: "eventSourceLink", width: 30 },
+      { header: "Event ID", key: "eventId", width: 20 },
+      { header: "Referral Code", key: "referralCode", width: 20 },
+      { header: "Additional Info", key: "additionalInfo", width: 40 },
+    ];
+
+    rows.forEach((r) => {
+      sheet.addRow({
+        fullName: r.fullName,
+        email: r.email,
+        phoneNumber: r.phoneNumber,
+        citizenship: r.citizenship,
+        residence: r.residence,
+        preferredStudyLevel: r.preferredStudyLevel,
+        studyDestinations: r.studyDestinations?.join(", ") || "",
+        academicHistory: JSON.stringify(r.academicHistory),
+        createdAt: new Date(r.createdAt).toLocaleString("en-GB"),
+        eventSourceName: r.eventSourceName,
+        eventSourceLink: r.eventSourceLink,
+        eventId: r.eventId,
+        referralCode: r.referralCode,
+        additionalInfo: JSON.stringify(r.additionalInfo),
+      });
+    });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    archive.append(buffer, { name: `${event}.xlsx` });
+  }
+
+  await archive.finalize();
 };
