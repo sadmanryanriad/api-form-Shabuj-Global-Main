@@ -16,25 +16,25 @@ exports.getWelcomeModal = async (req, res) => {
 
 exports.updateWelcomeModal = async (req, res) => {
     try {
-        const { largeImageURL, phoneImageURL, formLink } = req.body;
+        const { largeImageURL, phoneImageURL, formLink, expiresAt } = req.body;
 
         if (!largeImageURL || !phoneImageURL || !formLink) {
-            return res.status(400).json({ message: "All fields are required" });
+            return res.status(400).json({ message: "largeImageURL, phoneImageURL and formLink are required" });
         }
 
-        // Check if the WelcomeModal already exists
+        const updateData = { largeImageURL, phoneImageURL, formLink };
+
+        // Add expiresAt only if it's present in the request (can be null or a date string)
+        if (expiresAt !== undefined) {
+            updateData.expiresAt = expiresAt;
+        }
+
         let welcomeModal = await WelcomeModal.findOne();
 
         if (welcomeModal) {
-            // If it exists, update it
-            welcomeModal = await WelcomeModal.findOneAndUpdate(
-                {},
-                { largeImageURL, phoneImageURL, formLink },
-                { new: true }
-            );
+            welcomeModal = await WelcomeModal.findOneAndUpdate({}, updateData, { new: true });
         } else {
-            // If it doesn't exist, create a new one
-            welcomeModal = new WelcomeModal({ largeImageURL, phoneImageURL, formLink });
+            welcomeModal = new WelcomeModal(updateData);
             await welcomeModal.save();
         }
 
@@ -43,3 +43,4 @@ exports.updateWelcomeModal = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+
