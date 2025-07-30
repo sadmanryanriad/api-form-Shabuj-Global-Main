@@ -14,12 +14,18 @@ exports.submitFeedback = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-// GET: Get all feedbacks (optional: sorted by latest)
+// GET: Get all feedbacks (with optional date filter, sorted by latest)
 exports.getAllFeedbacks = async (req, res) => {
   try {
-    const { page = "1", perPage = "20", sortBy = "desc" } = req.query;
+    const {
+      page = "1",
+      perPage = "20",
+      sortBy = "desc",
+      from, // optional start date
+      to,   // optional end date
+    } = req.query;
 
-    // Parse values to integers
+    // Parse pagination values
     const pageNum = Math.max(parseInt(page, 10) || 1, 1);
     const pageSize = Math.min(Math.max(parseInt(perPage, 10) || 20, 1), 100);
 
@@ -27,14 +33,27 @@ exports.getAllFeedbacks = async (req, res) => {
     const sortDir = String(sortBy).toLowerCase() === "asc" ? 1 : -1;
     const sortStage = { createdAt: sortDir };
 
-    // Query for total number of feedbacks (counting all records before pagination)
-    const total = await LiveFeedback.countDocuments();
+    // Build filter object
+    const filter = {};
 
-    // Query for sorted and paginated feedbacks
-    const feedbacks = await LiveFeedback.find()
-      .sort(sortStage)                          // Sort first by createdAt
-      .skip((pageNum - 1) * pageSize)           // Skip the records for pagination
-      .limit(pageSize)                          // Limit per page
+    if (from || to) {
+      filter.createdAt = {};
+      if (from) filter.createdAt.$gte = new Date(from);
+      if (to) {
+        const toDate = new Date(to);
+        toDate.setHours(23, 59, 59, 999); // include the whole "to" day
+        filter.createdAt.$lte = toDate;
+      }
+    }
+
+    // Count total feedbacks matching filter
+    const total = await LiveFeedback.countDocuments(filter);
+
+    // Fetch paginated feedbacks with sorting
+    const feedbacks = await LiveFeedback.find(filter)
+      .sort(sortStage)
+      .skip((pageNum - 1) * pageSize)
+      .limit(pageSize)
       .lean();
 
     const totalPages = Math.max(Math.ceil(total / pageSize), 1);
