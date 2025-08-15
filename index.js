@@ -27,6 +27,8 @@ const corsOptions = {
     "http://www.shabujglobal.com",
     "https://sgelist.netlify.app",
     "https://sge-next-3.vercel.app",
+    "https://sge-crawl-testing.vercel.app", //temp
+    "https://shadcn-ui-test-delta.vercel.app",//temp
   ],
   credentials: true,
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
