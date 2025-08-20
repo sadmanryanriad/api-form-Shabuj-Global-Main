@@ -1,4 +1,5 @@
 const LiveFeedback = require("../models/LiveFeedback");
+const ExcelJS = require("exceljs");
 
 exports.submitFeedback = async (req, res) => {
   try {
@@ -69,5 +70,83 @@ exports.getAllFeedbacks = async (req, res) => {
   } catch (error) {
     console.error("Error fetching feedbacks:", error);
     res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+exports.exportLiveFeedback = async (req, res) => {
+  try {
+    const { from, to } = req.query;
+    
+    const filter = {};
+
+    // Build date filter
+    if (from || to) {
+      filter.createdAt = {};
+      if (from) filter.createdAt.$gte = new Date(from);
+      if (to) {
+        const toDate = new Date(to);
+        toDate.setHours(23, 59, 59, 999);
+        filter.createdAt.$lte = toDate;
+      }
+    }
+
+    // Get feedbacks to export (always descending order - newest first)
+    const feedbacks = await LiveFeedback.find(filter)
+      .sort({ createdAt: -1 })
+      .lean();
+
+    if (!feedbacks.length) {
+      return res.status(404).json({ message: "No live feedback found" });
+    }
+
+    // Build workbook
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Live Feedback");
+
+    worksheet.columns = [
+      { header: "Name", key: "name", width: 25 },
+      { header: "Email", key: "email", width: 30 },
+      { header: "Feedback", key: "feedback", width: 60 },
+      { header: "Created At", key: "createdAt", width: 25 },
+    ];
+
+    feedbacks.forEach((feedback) => {
+      worksheet.addRow({
+        name: feedback.name || "",
+        email: feedback.email || "",
+        feedback: feedback.feedback || "",
+        createdAt: feedback.createdAt
+          ? new Date(feedback.createdAt).toLocaleString("en-GB", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "N/A",
+      });
+    });
+
+    // Create dynamic filename based on date filters
+    const dateLabel =
+      from && to 
+        ? `from_${from}_to_${to}` 
+        : new Date().toISOString().split("T")[0];
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="LiveFeedback_${dateLabel}.xlsx"`
+    );
+
+    // Stream the workbook to the response
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error("Error exporting live feedback:", error);
+    res.status(500).json({ error: "Failed to export live feedback" });
   }
 };
