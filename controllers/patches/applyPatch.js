@@ -2,13 +2,27 @@ const Apply = require("../../models/Apply");
 
 const applyPatch = async (req, res) => {
   const { id } = req.params;
-  const { markAsRead, newNote, newStatus } = req.body;
+  const { markAsRead, isHighlight, newNote, newStatus } = req.body;
 
   try {
     const updateFields = {};
 
+    // markAsRead (accept boolean or "true"/"false")
     if (markAsRead !== undefined) {
-      updateFields.markAsRead = markAsRead;
+      const parsedMarkAsRead =
+        typeof markAsRead === "string"
+          ? markAsRead.toLowerCase() === "true"
+          : Boolean(markAsRead);
+      updateFields.markAsRead = parsedMarkAsRead;
+    }
+
+    // isHighlight (accept boolean or "true"/"false")
+    if (isHighlight !== undefined) {
+      const parsedIsHighlight =
+        typeof isHighlight === "string"
+          ? isHighlight.toLowerCase() === "true"
+          : Boolean(isHighlight);
+      updateFields.isHighlight = parsedIsHighlight;
     }
 
     if (newNote) {
@@ -27,6 +41,7 @@ const applyPatch = async (req, res) => {
 
     res.json({ message: "Application updated successfully", data: updated });
   } catch (error) {
+    console.error("Failed to update application", error);
     res.status(500).json({ message: "Failed to update application", error });
   }
 };
