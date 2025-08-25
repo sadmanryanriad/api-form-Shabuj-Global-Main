@@ -17,12 +17,17 @@ exports.exportApplications = async (req, res) => {
       }
     }
 
+    // Get applications to export
     const applications = await Apply.find(filter).sort({ createdAt: -1 }).lean();
 
     if (!applications.length) {
       return res.status(404).json({ message: "No applications found" });
     }
 
+    // Collect IDs to mark read later (only what we exported)
+    const exportedIds = applications.map((a) => a._id);
+
+    // Build workbook
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Applications");
 
@@ -33,7 +38,7 @@ exports.exportApplications = async (req, res) => {
       { header: "Study Destination", key: "studyDestination", width: 25 },
       { header: "Study Year", key: "studyYear", width: 15 },
       { header: "Study Intake", key: "studyIntake", width: 15 },
-      { header: "Created At", key: "createdAt", width: 25 }
+      { header: "Created At", key: "createdAt", width: 25 },
     ];
 
     applications.forEach((app) => {
@@ -50,15 +55,14 @@ exports.exportApplications = async (req, res) => {
               month: "2-digit",
               year: "numeric",
               hour: "2-digit",
-              minute: "2-digit"
+              minute: "2-digit",
             })
-          : "N/A"
+          : "N/A",
       });
     });
 
-    const dateLabel = from && to
-      ? `from_${from}_to_${to}`
-      : new Date().toISOString().split("T")[0];
+    const dateLabel =
+      from && to ? `from_${from}_to_${to}` : new Date().toISOString().split("T")[0];
 
     res.setHeader(
       "Content-Type",
@@ -69,6 +73,19 @@ exports.exportApplications = async (req, res) => {
       `attachment; filename="Applications_${dateLabel}.xlsx"`
     );
 
+    // After streaming completes successfully, mark exported docs as read
+    res.once("finish", async () => {
+      try {
+        await Apply.updateMany(
+          { _id: { $in: exportedIds }, markAsRead: { $ne: true } },
+          { $set: { markAsRead: true } }
+        );
+      } catch (e) {
+        console.error("Failed to mark exported applications as read:", e);
+      }
+    });
+
+    // Stream the workbook to the response
     await workbook.xlsx.write(res);
     res.end();
   } catch (error) {
