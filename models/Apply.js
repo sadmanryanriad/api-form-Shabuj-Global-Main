@@ -23,5 +23,7 @@ const applySchema = new mongoose.Schema({
   ]
 });
 
+applySchema.index({ createdAt: -1, _id: -1 });
+
 const Apply = mongoose.model("Apply", applySchema);
 module.exports = Apply;
