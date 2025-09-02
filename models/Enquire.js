@@ -7,6 +7,7 @@ const enquireSchema = new mongoose.Schema({
   message: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
   markAsRead: { type: Boolean, default: false },
+  phoneNumber: { type: String, required: false },
   notes: [
     {
       note: String,
