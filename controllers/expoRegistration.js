@@ -58,7 +58,18 @@ exports.createExpoRegistration = async (req, res) => {
 // GET: Fetch expo registrations (with optional filtering)
 exports.getExpoRegistrations = async (req, res) => {
   try {
-    const { from, to, eventId, eventSourceLink, referralCode, page = 1, perPage = 20 } = req.query;
+    const {
+      from,
+      to,
+      eventId,
+      eventSourceLink,
+      referralCode,
+      page = 1,
+      perPage = 20,
+      sortBy = "createdAt",  // Default sorting by createdAt
+      sortOrder = "desc"    // Default sorting order: "desc" (newest first)
+    } = req.query;
+
     const filter = {};
 
     // Date range filter
@@ -80,12 +91,17 @@ exports.getExpoRegistrations = async (req, res) => {
     const pageNum = Math.max(parseInt(page, 10) || 1, 1);
     const pageSize = Math.min(Math.max(parseInt(perPage, 10) || 20, 1), 100);
 
+    // Sorting logic
+    const sortDir = sortOrder.toLowerCase() === "asc" ? 1 : -1;
+    const sortStage = {};
+    sortStage[sortBy] = sortDir;
+
     const [data, total] = await Promise.all([
       ExpoRegistration.find(filter)
-        .sort({ createdAt: -1 })
-        .skip((pageNum - 1) * pageSize)
-        .limit(pageSize),
-      ExpoRegistration.countDocuments(filter),
+        .sort(sortStage)                           // Apply dynamic sorting
+        .skip((pageNum - 1) * pageSize)            // Pagination
+        .limit(pageSize),                          // Pagination
+      ExpoRegistration.countDocuments(filter),    // Total count for pagination
     ]);
 
     const totalPages = Math.max(Math.ceil(total / pageSize), 1);
@@ -95,6 +111,8 @@ exports.getExpoRegistrations = async (req, res) => {
       totalPages,
       currentPage: pageNum,
       perPage: pageSize,
+      sortBy,
+      sortOrder,
       data,
     });
   } catch (error) {
