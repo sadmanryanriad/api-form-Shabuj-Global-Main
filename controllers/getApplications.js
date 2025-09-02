@@ -2,12 +2,19 @@ const Apply = require("../models/Apply");
 
 module.exports = async function getApplications(req, res) {
   try {
-    let { page = "1", perPage = "20", sortBy = "desc", markAsRead, highlight } = req.query;
+    let {
+      page = "1",
+      perPage = "20",
+      sortBy = "desc",
+      markAsRead,
+      highlight,
+      from,
+      to,
+    } = req.query;
 
-    // Build filter
     const filter = {};
 
-    // markAsRead filter (accepts "true"/"false")
+    // markAsRead filter
     if (typeof markAsRead !== "undefined") {
       const parsed =
         typeof markAsRead === "string"
@@ -16,7 +23,7 @@ module.exports = async function getApplications(req, res) {
       filter.markAsRead = parsed;
     }
 
-    // highlight filter -> maps to isHighlight
+    // highlight filter
     if (typeof highlight !== "undefined") {
       const parsed =
         typeof highlight === "string"
@@ -25,14 +32,25 @@ module.exports = async function getApplications(req, res) {
       filter.isHighlight = parsed;
     }
 
+    // date filter
+    if (from || to) {
+      filter.createdAt = {};
+      if (from) filter.createdAt.$gte = new Date(from);
+      if (to) {
+        const toDate = new Date(to);
+        toDate.setHours(23, 59, 59, 999); // include whole day
+        filter.createdAt.$lte = toDate;
+      }
+    }
+
     // Sorting
     const sortDir = String(sortBy).toLowerCase() === "asc" ? 1 : -1;
     const sortStage = { createdAt: sortDir, _id: sortDir };
 
-    // Count for current filter
+    // Count
     const total = await Apply.countDocuments(filter);
 
-    // "all" mode — return everything that matches filter (sorted)
+    // "all" mode
     if (String(perPage).toLowerCase() === "all") {
       const items = await Apply.find(filter).sort(sortStage).lean();
 
@@ -81,6 +99,7 @@ module.exports = async function getApplications(req, res) {
     res.status(500).json({ error: "Failed to fetch applications" });
   }
 };
+
 
 
 
