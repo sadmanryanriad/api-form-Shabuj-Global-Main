@@ -55,10 +55,10 @@ exports.createExpoRegistration = async (req, res) => {
   }
 };
 
-// GET: Fetch expo registrations (with optional filtering by date range)
+// GET: Fetch expo registrations (with optional filtering)
 exports.getExpoRegistrations = async (req, res) => {
   try {
-    const { from, to, eventId, eventSourceLink, referralCode } = req.query;
+    const { from, to, eventId, eventSourceLink, referralCode, page = 1, perPage = 20 } = req.query;
     const filter = {};
 
     // Date range filter
@@ -76,13 +76,33 @@ exports.getExpoRegistrations = async (req, res) => {
     if (eventSourceLink) filter.eventSourceLink = eventSourceLink;
     if (referralCode) filter.referralCode = referralCode;
 
-    const data = await ExpoRegistration.find(filter).sort({ createdAt: -1 });
-    res.status(200).json({ total: data.length, data });
+    // Pagination logic
+    const pageNum = Math.max(parseInt(page, 10) || 1, 1);
+    const pageSize = Math.min(Math.max(parseInt(perPage, 10) || 20, 1), 100);
+
+    const [data, total] = await Promise.all([
+      ExpoRegistration.find(filter)
+        .sort({ createdAt: -1 })
+        .skip((pageNum - 1) * pageSize)
+        .limit(pageSize),
+      ExpoRegistration.countDocuments(filter),
+    ]);
+
+    const totalPages = Math.max(Math.ceil(total / pageSize), 1);
+
+    res.status(200).json({
+      total,
+      totalPages,
+      currentPage: pageNum,
+      perPage: pageSize,
+      data,
+    });
   } catch (error) {
     console.error("Error fetching expo registrations:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
 
 // Export Expo Registrations to Excel
 exports.exportExpoRegistrations = async (req, res) => {
