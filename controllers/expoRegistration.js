@@ -319,3 +319,71 @@ exports.exportByEvent = async (req, res) => {
 
   await archive.finalize();
 };
+
+// PATCH: Update expo registration admin fields (notes, highlight, markAsRead)
+exports.updateExpoRegistration = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { note, highlight, markAsRead } = req.body;
+
+    // Find the registration
+    const registration = await ExpoRegistration.findById(id);
+    if (!registration) {
+      return res.status(404).json({ message: "Expo registration not found" });
+    }
+
+    // Prepare update object
+    const updateData = {};
+
+    // Handle highlight field
+    if (typeof highlight === 'boolean') {
+      updateData.highlight = highlight;
+    }
+
+    // Handle markAsRead field
+    if (typeof markAsRead === 'boolean') {
+      updateData.markAsRead = markAsRead;
+    }
+
+    // Handle adding new note
+    if (note && typeof note === 'string' && note.trim().length > 0) {
+      updateData.$push = { notes: note.trim() };
+    }
+
+    // Check if there's anything to update
+    if (Object.keys(updateData).length === 0 && !updateData.$push) {
+      return res.status(400).json({ 
+        message: "No valid fields to update. Provide highlight, markAsRead, or note." 
+      });
+    }
+
+    // Update the registration
+    const updatedRegistration = await ExpoRegistration.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    res.status(200).json({
+      message: "Expo registration updated successfully",
+      data: updatedRegistration
+    });
+
+  } catch (error) {
+    console.error("Error updating expo registration:", error);
+    
+    // Handle specific MongoDB errors
+    if (error.name === 'CastError') {
+      return res.status(400).json({ message: "Invalid registration ID format" });
+    }
+    
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ 
+        message: "Validation error", 
+        errors: error.errors 
+      });
+    }
+
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};

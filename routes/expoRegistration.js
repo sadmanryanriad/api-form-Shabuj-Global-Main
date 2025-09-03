@@ -5,11 +5,14 @@ const {
   getExpoRegistrations,
   exportExpoRegistrations,
   exportByEvent,
+  updateExpoRegistration
 } = require("../controllers/expoRegistration");
 
 router.post("/", createExpoRegistration);
 router.get("/", getExpoRegistrations);
 router.get("/export", exportExpoRegistrations); 
 router.get("/export/separateByEvents", exportByEvent);
+// PATCH routes
+router.patch("/:id", updateExpoRegistration);
 
 module.exports = router;
