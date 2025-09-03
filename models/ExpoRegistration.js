@@ -120,23 +120,7 @@ const ExpoRegistration = new mongoose.Schema(
       default: false,
     },
     notes: {
-      type: [
-        {
-          content: {
-            type: String,
-            required: true,
-            trim: true,
-          },
-          createdAt: {
-            type: Date,
-            default: Date.now,
-          },
-          createdBy: {
-            type: String,
-            trim: true,
-          }, // Optional: to track who added the note
-        },
-      ],
+      type: [String],
       default: [],
     },
   },

@@ -6,7 +6,14 @@ const archiver = require("archiver");
 // POST: Create a new expo registration
 exports.createExpoRegistration = async (req, res) => {
   try {
-    const { recaptchaToken, message, ...formData } = req.body;
+    const {
+      recaptchaToken,
+      message,
+      highlight,
+      markAsRead,
+      notes,
+      ...formData
+    } = req.body;
     // Honeypot bot detection
     if (message && message.trim().length > 0) {
       console.warn("Bot detected via honeypot. Ignoring submission.");
@@ -43,9 +50,19 @@ exports.createExpoRegistration = async (req, res) => {
       return res.status(500).json({ message: "Error verifying reCAPTCHA" });
     }
 
-    // Save only valid form data (excluding recaptchaToken)
-    const newEntry = new ExpoRegistration(formData);
+    // Prepare the registration data
+    const registrationData = {
+      ...formData,
+      // Set default values for admin fields
+      highlight: false,
+      markAsRead: false,
+      notes: [],
+    };
+
+    // Create and save the new registration
+    const newEntry = new ExpoRegistration(registrationData);
     await newEntry.save();
+
     res
       .status(201)
       .json({ message: "Expo registration saved", data: newEntry });
@@ -66,8 +83,8 @@ exports.getExpoRegistrations = async (req, res) => {
       referralCode,
       page = 1,
       perPage = 20,
-      sortBy = "createdAt",  // Default sorting by createdAt
-      sortOrder = "desc"    // Default sorting order: "desc" (newest first)
+      sortBy = "createdAt", // Default sorting by createdAt
+      sortOrder = "desc", // Default sorting order: "desc" (newest first)
     } = req.query;
 
     const filter = {};
@@ -98,10 +115,10 @@ exports.getExpoRegistrations = async (req, res) => {
 
     const [data, total] = await Promise.all([
       ExpoRegistration.find(filter)
-        .sort(sortStage)                           // Apply dynamic sorting
-        .skip((pageNum - 1) * pageSize)            // Pagination
-        .limit(pageSize),                          // Pagination
-      ExpoRegistration.countDocuments(filter),    // Total count for pagination
+        .sort(sortStage) // Apply dynamic sorting
+        .skip((pageNum - 1) * pageSize) // Pagination
+        .limit(pageSize), // Pagination
+      ExpoRegistration.countDocuments(filter), // Total count for pagination
     ]);
 
     const totalPages = Math.max(Math.ceil(total / pageSize), 1);
@@ -121,11 +138,10 @@ exports.getExpoRegistrations = async (req, res) => {
   }
 };
 
-
 // Export Expo Registrations to Excel
 exports.exportExpoRegistrations = async (req, res) => {
   try {
-    const { from, to, eventSourceLink  } = req.query;
+    const { from, to, eventSourceLink } = req.query;
     const filter = {};
 
     if (from || to) {
@@ -243,10 +259,12 @@ exports.exportByEvent = async (req, res) => {
   const fromLabel = from ? new Date(from).toISOString().split("T")[0] : "start";
   const toLabel = to ? new Date(to).toISOString().split("T")[0] : "now";
   const dateLabel = `_from_${fromLabel}_to_${toLabel}`;
-  
+
   res.setHeader("Content-Type", "application/zip");
-  res.setHeader("Content-Disposition", `attachment; filename="Expo_By_Event${dateLabel}.zip"`);
-  
+  res.setHeader(
+    "Content-Disposition",
+    `attachment; filename="Expo_By_Event${dateLabel}.zip"`
+  );
 
   const archive = archiver("zip");
   archive.pipe(res);
@@ -261,7 +279,11 @@ exports.exportByEvent = async (req, res) => {
       { header: "Phone Number", key: "phoneNumber", width: 20 },
       { header: "Citizenship", key: "citizenship", width: 15 },
       { header: "Residence", key: "residence", width: 15 },
-      { header: "Preferred Study Level", key: "preferredStudyLevel", width: 20 },
+      {
+        header: "Preferred Study Level",
+        key: "preferredStudyLevel",
+        width: 20,
+      },
       { header: "Study Destinations", key: "studyDestinations", width: 30 },
       { header: "Academic History", key: "academicHistory", width: 30 },
       { header: "Created At", key: "createdAt", width: 25 },
@@ -293,7 +315,6 @@ exports.exportByEvent = async (req, res) => {
 
     const buffer = await workbook.xlsx.writeBuffer();
     archive.append(buffer, { name: `${event}${dateLabel}.xlsx` });
-
   }
 
   await archive.finalize();
