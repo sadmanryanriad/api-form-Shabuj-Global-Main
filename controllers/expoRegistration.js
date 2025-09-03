@@ -81,6 +81,7 @@ exports.getExpoRegistrations = async (req, res) => {
       eventId,
       eventSourceLink,
       referralCode,
+      studyDestination, 
       page = 1,
       perPage = 20,
       sortBy = "createdAt", // Default sorting by createdAt
@@ -103,6 +104,14 @@ exports.getExpoRegistrations = async (req, res) => {
     if (eventId) filter.eventId = eventId;
     if (eventSourceLink) filter.eventSourceLink = eventSourceLink;
     if (referralCode) filter.referralCode = referralCode;
+
+    // Study Destinations filter (include both studyDestinations array & otherStudyDestination)
+    if (studyDestination) {
+      filter.$or = [
+        { studyDestinations: studyDestination },
+        { otherStudyDestination: { $regex: new RegExp(`^${studyDestination}$`, "i") } },
+      ];
+    }
 
     // Pagination logic
     const pageNum = Math.max(parseInt(page, 10) || 1, 1);

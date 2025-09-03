@@ -10,6 +10,7 @@ const {
 
 router.post("/", createExpoRegistration);
 router.get("/", getExpoRegistrations);
+//exports routes
 router.get("/export", exportExpoRegistrations); 
 router.get("/export/separateByEvents", exportByEvent);
 // PATCH routes
