@@ -104,11 +104,40 @@ const ExpoRegistration = new mongoose.Schema(
       ],
       default: [],
     },
-    
+
     // Optional: future-proof
     consentToTerms: {
       type: Boolean,
       default: false,
+    },
+    // Admin management properties
+    highlight: {
+      type: Boolean,
+      default: false,
+    },
+    markAsRead: {
+      type: Boolean,
+      default: false,
+    },
+    notes: {
+      type: [
+        {
+          content: {
+            type: String,
+            required: true,
+            trim: true,
+          },
+          createdAt: {
+            type: Date,
+            default: Date.now,
+          },
+          createdBy: {
+            type: String,
+            trim: true,
+          }, // Optional: to track who added the note
+        },
+      ],
+      default: [],
     },
   },
   { timestamps: true }
@@ -121,37 +150,3 @@ ExpoRegistration.index({ eventId: 1 });
 ExpoRegistration.index({ referralCode: 1 });
 
 module.exports = mongoose.model("ExpoRegistration", ExpoRegistration);
-
-
-
-
-
-
-
-
-
-
-
-// "additionalInfo": [
-//   {
-//     "label": "How did you hear about the event?",
-//     "value": "Facebook"
-//   },
-//   {
-//     "label": "Are you bringing any guests?",
-//     "value": 2
-//   },
-//   {
-//     "label": "Special requirements",
-//     "value": {
-//       "dietary": "Vegetarian",
-//       "accessibility": true
-//     }
-//   },
-//   {
-//     "label": "Follow-up Preferences",
-//     "value": ["Email", "Phone"]
-//   }
-// ]
-
-
