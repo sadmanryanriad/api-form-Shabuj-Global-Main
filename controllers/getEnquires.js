@@ -6,8 +6,7 @@ const getEnquires = async (req, res) => {
     const {
       page = "1",
       perPage = "20",
-      sortBy = "createdAt",    // Field to sort by (default: createdAt)
-      sortOrder = "desc",      // Direction: asc or desc (default: desc)
+      sortBy = "desc",
       from, // optional start date
       to,   // optional end date
     } = req.query;
@@ -17,9 +16,8 @@ const getEnquires = async (req, res) => {
     const pageSize = Math.min(Math.max(parseInt(perPage, 10) || 20, 1), 100);
 
     // Sort direction (asc or desc)
-    const sortDir = String(sortOrder).toLowerCase() === "asc" ? 1 : -1;
-    const sortStage = {};
-    sortStage[sortBy] = sortDir;
+    const sortDir = String(sortBy).toLowerCase() === "asc" ? 1 : -1;
+    const sortStage = { createdAt: sortDir };
 
     // Build filter object
     const filter = {};
@@ -51,8 +49,7 @@ const getEnquires = async (req, res) => {
       totalPages,
       currentPage: pageNum,
       perPage: pageSize,
-      sortBy,      // Field name
-      sortOrder,   // Direction
+      sortBy,
       enquiries,
     });
   } catch (error) {
