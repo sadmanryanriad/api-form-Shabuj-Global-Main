@@ -81,7 +81,9 @@ exports.getExpoRegistrations = async (req, res) => {
       eventId,
       eventSourceLink,
       referralCode,
-      studyDestination, 
+      studyDestination,
+      highlight,    
+      markAsRead,    
       page = 1,
       perPage = 20,
       sortBy = "createdAt", // Default sorting by createdAt
@@ -111,6 +113,26 @@ exports.getExpoRegistrations = async (req, res) => {
         { studyDestinations: studyDestination },
         { otherStudyDestination: { $regex: new RegExp(`^${studyDestination}$`, "i") } },
       ];
+    }
+
+    // Highlight filter
+    if (highlight !== undefined) {
+      // Convert string to boolean
+      if (highlight === 'true' || highlight === true) {
+        filter.highlight = true;
+      } else if (highlight === 'false' || highlight === false) {
+        filter.highlight = false;
+      }
+    }
+
+    // MarkAsRead filter
+    if (markAsRead !== undefined) {
+      // Convert string to boolean
+      if (markAsRead === 'true' || markAsRead === true) {
+        filter.markAsRead = true;
+      } else if (markAsRead === 'false' || markAsRead === false) {
+        filter.markAsRead = false;
+      }
     }
 
     // Pagination logic
