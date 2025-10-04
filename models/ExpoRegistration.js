@@ -45,6 +45,14 @@ const ExpoRegistration = new mongoose.Schema(
       type: String,
     },
 
+    // NEW FIELDS
+    studyYear: {
+      type: String,
+    },
+    studyIntake: {
+      type: String,
+    },
+
     // Step 3: Academic History
     academicHistory: {
       type: [
