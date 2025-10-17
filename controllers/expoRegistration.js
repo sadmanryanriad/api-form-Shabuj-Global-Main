@@ -82,8 +82,8 @@ exports.getExpoRegistrations = async (req, res) => {
       eventSourceLink,
       referralCode,
       studyDestination,
-      highlight,    
-      markAsRead,    
+      highlight,
+      markAsRead,
       page = 1,
       perPage = 20,
       sortBy = "createdAt", // Default sorting by createdAt
@@ -111,16 +111,20 @@ exports.getExpoRegistrations = async (req, res) => {
     if (studyDestination) {
       filter.$or = [
         { studyDestinations: studyDestination },
-        { otherStudyDestination: { $regex: new RegExp(`^${studyDestination}$`, "i") } },
+        {
+          otherStudyDestination: {
+            $regex: new RegExp(`^${studyDestination}$`, "i"),
+          },
+        },
       ];
     }
 
     // Highlight filter
     if (highlight !== undefined) {
       // Convert string to boolean
-      if (highlight === 'true' || highlight === true) {
+      if (highlight === "true" || highlight === true) {
         filter.highlight = true;
-      } else if (highlight === 'false' || highlight === false) {
+      } else if (highlight === "false" || highlight === false) {
         filter.highlight = false;
       }
     }
@@ -128,9 +132,9 @@ exports.getExpoRegistrations = async (req, res) => {
     // MarkAsRead filter
     if (markAsRead !== undefined) {
       // Convert string to boolean
-      if (markAsRead === 'true' || markAsRead === true) {
+      if (markAsRead === "true" || markAsRead === true) {
         filter.markAsRead = true;
-      } else if (markAsRead === 'false' || markAsRead === false) {
+      } else if (markAsRead === "false" || markAsRead === false) {
         filter.markAsRead = false;
       }
     }
@@ -220,6 +224,8 @@ exports.exportExpoRegistrations = async (req, res) => {
       { header: "event Id", key: "eventId", width: 15 },
       { header: "Referral Code", key: "referralCode", width: 20 },
       { header: "Additional Info", key: "additionalInfo", width: 40 },
+      { header: "Study Year", key: "studyYear", width: 15 },
+      { header: "Study Intake", key: "studyIntake", width: 15 },
     ];
 
     // Add data rows to the worksheet
@@ -240,6 +246,8 @@ exports.exportExpoRegistrations = async (req, res) => {
         eventId: registration.eventId || "",
         referralCode: registration.referralCode || "",
         additionalInfo: JSON.stringify(registration.additionalInfo || []),
+        studyYear: registration.studyYear || "",
+        studyIntake: registration.studyIntake || "",
       });
     });
 
@@ -323,6 +331,8 @@ exports.exportByEvent = async (req, res) => {
       { header: "Event ID", key: "eventId", width: 20 },
       { header: "Referral Code", key: "referralCode", width: 20 },
       { header: "Additional Info", key: "additionalInfo", width: 40 },
+      { header: "Study Year", key: "studyYear", width: 15 },
+      { header: "Study Intake", key: "studyIntake", width: 15 },
     ];
 
     rows.forEach((r) => {
@@ -341,6 +351,8 @@ exports.exportByEvent = async (req, res) => {
         eventId: r.eventId,
         referralCode: r.referralCode,
         additionalInfo: JSON.stringify(r.additionalInfo),
+        studyYear: r.studyYear || "",
+        studyIntake: r.studyIntake || "",
       });
     });
 
@@ -367,24 +379,25 @@ exports.updateExpoRegistration = async (req, res) => {
     const updateData = {};
 
     // Handle highlight field
-    if (typeof highlight === 'boolean') {
+    if (typeof highlight === "boolean") {
       updateData.highlight = highlight;
     }
 
     // Handle markAsRead field
-    if (typeof markAsRead === 'boolean') {
+    if (typeof markAsRead === "boolean") {
       updateData.markAsRead = markAsRead;
     }
 
     // Handle adding new note
-    if (note && typeof note === 'string' && note.trim().length > 0) {
+    if (note && typeof note === "string" && note.trim().length > 0) {
       updateData.$push = { notes: note.trim() };
     }
 
     // Check if there's anything to update
     if (Object.keys(updateData).length === 0 && !updateData.$push) {
-      return res.status(400).json({ 
-        message: "No valid fields to update. Provide highlight, markAsRead, or note." 
+      return res.status(400).json({
+        message:
+          "No valid fields to update. Provide highlight, markAsRead, or note.",
       });
     }
 
@@ -397,21 +410,22 @@ exports.updateExpoRegistration = async (req, res) => {
 
     res.status(200).json({
       message: "Expo registration updated successfully",
-      data: updatedRegistration
+      data: updatedRegistration,
     });
-
   } catch (error) {
     console.error("Error updating expo registration:", error);
-    
+
     // Handle specific MongoDB errors
-    if (error.name === 'CastError') {
-      return res.status(400).json({ message: "Invalid registration ID format" });
+    if (error.name === "CastError") {
+      return res
+        .status(400)
+        .json({ message: "Invalid registration ID format" });
     }
-    
-    if (error.name === 'ValidationError') {
-      return res.status(400).json({ 
-        message: "Validation error", 
-        errors: error.errors 
+
+    if (error.name === "ValidationError") {
+      return res.status(400).json({
+        message: "Validation error",
+        errors: error.errors,
       });
     }
 
