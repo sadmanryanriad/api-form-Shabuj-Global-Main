@@ -36,9 +36,24 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+
 // Middleware to parse form data
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json()); // For JSON payloads
+// Parse large JSON / form bodies (put this AFTER CORS, BEFORE routes)
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Return clean JSON when the JSON body is invalid
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && 'body' in err) {
+    return res.status(400).json({
+      message: 'Invalid JSON in request body. Ensure the client JSON.stringify()s the payload.',
+      details: err.message,
+    });
+  }
+  next(err);
+});
+
+
 // Connect to MongoDB
 mongoose
   .connect(uri)
