@@ -2,22 +2,58 @@ const mongoose = require("mongoose");
 
 const blogSchema = new mongoose.Schema(
   {
-    readTime: { type: String, required: true },
-    title: { type: String, required: true },
-    writer: { type: String, required: true },
-    image: { type: String, required: true },
-    description: { type: String, required: true },
-    category: { type: String, required: true },
-    mainHeadingH1: { type: String, required: true },
-    paragraph: { type: String, required: true },
+    // Basic content
+    title: { type: String, required: true },                       // Title
+    category: { type: String, required: true },                    // Category
+    img: { type: String, required: true },                         // Img (main image URL)
+    date: { type: Date, default: Date.now },                       // Date (can be publish date)
+    author: { type: String, required: true },                      // Author
+    summary: { type: String, required: true },                     // Summary / short description
+    tableOfContents: [{ type: String }],                           // Table of content (array of headings/items)
+    mainContent: { type: String, required: true },                 // Main content (HTML / rich text)
+
+    // Suggestions
+    universityCategoryForSuggestion: { type: String },             // University category for suggestion
+    manualCategorySuggestions: { type: [String], default: [] },    // Manual category-based suggestions (string array)
+
+    // SEO
+    metaTitle: { type: String },
+    metaDescription: { type: String },
+    metaKeyword: { type: String },                                 // Comma-separated or single keyword string
+
+    // CTA
+    ctaUrl: { type: String },                                      // CTA_URL
+    ctaBtn: { type: String },                                      // CTA_Btn
+    isFormHidden: { type: Boolean, default: false },               // For CTA form visibility
+
+    // Status
+    status: {
+      type: String,
+      enum: ["publish", "notPublished"],
+      default: "notPublished",
+    },
+
+    // URL slug
     blogURL: {
       type: String,
       required: true,
       unique: true,
-      match: /^[a-z0-9]+(-[a-z0-9]+)*$/, // ✅ Enforcing URL validation
+      match: /^[a-z0-9]+(-[a-z0-9]+)*$/, // lowercase letters, numbers, hyphens
     },
+
+    // Versioning
+    version: {
+      type: String,
+      default: "1.0", // first version
+    },
+    versionHistory: [
+      {
+        version: { type: String, required: true }, // e.g. "1.0", "2.0"
+        updatedAt: { type: Date, default: Date.now },
+      },
+    ],
   },
-  { timestamps: true } // ✅ Adds createdAt & updatedAt
+  { timestamps: true } // createdAt & updatedAt
 );
 
 module.exports = mongoose.model("Blog", blogSchema);
