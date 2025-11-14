@@ -28,27 +28,27 @@ exports.createExpoRegistration = async (req, res) => {
         .json({ message: "Apply created successfully bro 😉" });
     }
 
-    // // Verify reCAPTCHA token
-    // try {
-    //   const secretKey = process.env.RECAPTCHA_SECRET_KEY;
-    //   const verifyUrl = "https://www.google.com/recaptcha/api/siteverify";
-    //   const { data } = await axios.post(
-    //     verifyUrl,
-    //     new URLSearchParams({
-    //       secret: secretKey,
-    //       response: recaptchaToken,
-    //     })
-    //   );
+    // Verify reCAPTCHA token
+    try {
+      const secretKey = process.env.RECAPTCHA_SECRET_KEY;
+      const verifyUrl = "https://www.google.com/recaptcha/api/siteverify";
+      const { data } = await axios.post(
+        verifyUrl,
+        new URLSearchParams({
+          secret: secretKey,
+          response: recaptchaToken,
+        })
+      );
 
-    //   if (!data.success) {
-    //     return res
-    //       .status(400)
-    //       .json({ message: "reCAPTCHA verification failed" });
-    //   }
-    // } catch (verifyErr) {
-    //   console.error("reCAPTCHA error:", verifyErr);
-    //   return res.status(500).json({ message: "Error verifying reCAPTCHA" });
-    // }
+      if (!data.success) {
+        return res
+          .status(400)
+          .json({ message: "reCAPTCHA verification failed" });
+      }
+    } catch (verifyErr) {
+      console.error("reCAPTCHA error:", verifyErr);
+      return res.status(500).json({ message: "Error verifying reCAPTCHA" });
+    }
 
     // Prepare the registration data
     const registrationData = {
