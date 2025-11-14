@@ -4,7 +4,7 @@ const blogSchema = new mongoose.Schema(
   {
     // Basic content
     title: { type: String, required: true },                       // Title
-    category: { type: String, required: true },                    // Category
+    category: { type: [String], required: true },                  // Category
     img: { type: String, required: true },                         // Img (main image URL)
     date: { type: Date, default: Date.now },                       // Date (can be publish date)
     author: { type: String, required: true },                      // Author

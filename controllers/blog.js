@@ -4,7 +4,7 @@ const BlogTrash = require("../models/BlogTrash");
 // CREATE BLOG
 exports.createBlog = async (req, res) => {
   try {
-    const {
+    let {
       title,
       category,
       img,
@@ -25,10 +25,21 @@ exports.createBlog = async (req, res) => {
       blogURL,
     } = req.body;
 
+    // Normalize category to array
+    let categoryArray;
+    if (Array.isArray(category)) {
+      categoryArray = category;
+    } else if (typeof category === "string" && category.trim() !== "") {
+      categoryArray = [category.trim()];
+    } else {
+      return res
+        .status(400)
+        .json({ message: "Category is required and must be a string or array of strings" });
+    }
+
     // Basic validation
     if (
       !title ||
-      !category ||
       !img ||
       !author ||
       !summary ||
@@ -46,7 +57,7 @@ exports.createBlog = async (req, res) => {
 
     const newBlog = new Blog({
       title,
-      category,
+      category: categoryArray, // ✅ store as array
       img,
       date,
       author,
@@ -77,6 +88,7 @@ exports.createBlog = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 
 // GET ALL BLOGS (optionally filter by status)
 exports.getAllBlogs = async (req, res) => {
@@ -222,7 +234,10 @@ exports.getBlogsByCategory = async (req, res) => {
       return res.status(400).json({ message: "Category is required" });
     }
 
-    const blogs = await Blog.find({ category }).sort({ createdAt: -1 }).select("-__v");
+    // Match blogs where category array contains this value
+    const blogs = await Blog.find({ category: { $in: [category] } })
+      .sort({ createdAt: -1 })
+      .select("-__v");
 
     res.status(200).json({ count: blogs.length, blogs });
   } catch (error) {
@@ -230,10 +245,11 @@ exports.getBlogsByCategory = async (req, res) => {
   }
 };
 
+
 // GET DISTINCT CATEGORY LIST 
 exports.getAllCategories = async (req, res) => {
   try {
-    const categories = await Blog.distinct("category");
+    const categories = await Blog.distinct("category"); // each unique tag
     res.status(200).json({
       count: categories.length,
       categories,
@@ -242,6 +258,7 @@ exports.getAllCategories = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 
 // DELETE BLOG BY blogURL (move to trash)
 exports.deleteBlogByBlogURL = async (req, res) => {
