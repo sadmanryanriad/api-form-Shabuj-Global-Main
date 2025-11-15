@@ -93,6 +93,8 @@ const exportRoutes = require("./routes/exportRoutes");
 const expoRegistrationRoute = require("./routes/expoRegistration");
 // Import live feedback routes
 const liveFeedbackRoute = require("./routes/liveFeedback");
+// Import university routes
+const universityRoutes = require("./routes/universityRoutes");
 
 // Form API to handle subject, email, and enquire data
 app.post("/enquire", enquire);
@@ -133,6 +135,10 @@ app.use("/modal-registration", modalRegistrationRoutes);
 
 // Export routes
 app.use("/export", exportRoutes);
+
+// Universities API
+app.use("/universities", universityRoutes);
+
 
 // API to get all expo registrations
 app.use("/expoRegistration", expoRegistrationRoute);

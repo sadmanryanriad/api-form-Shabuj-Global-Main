@@ -57,7 +57,7 @@ exports.createBlog = async (req, res) => {
 
     const newBlog = new Blog({
       title,
-      category: categoryArray, // ✅ store as array
+      category: categoryArray, // store as array
       img,
       date,
       author,
