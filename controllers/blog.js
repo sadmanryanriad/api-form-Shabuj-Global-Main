@@ -23,6 +23,8 @@ exports.createBlog = async (req, res) => {
       isFormHidden,
       status,
       blogURL,
+      video,              
+      exploreMoreCategory,
     } = req.body;
 
     // Normalize category to array
@@ -64,6 +66,8 @@ exports.createBlog = async (req, res) => {
       summary,
       tableOfContents,
       mainContent,
+      video,
+      exploreMoreCategory,
       universityCategoryForSuggestion,
       manualCategorySuggestions,
       metaTitle,

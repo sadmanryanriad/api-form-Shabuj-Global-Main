@@ -11,6 +11,8 @@ const blogSchema = new mongoose.Schema(
     summary: { type: String, required: true },                     // Summary / short description
     tableOfContents: [{ type: String }],                           // Table of content (array of headings/items)
     mainContent: { type: String, required: true },                 // Main content (HTML / rich text)
+    video: { type: String },                                       // Optional video URL (YouTube, etc.)
+    exploreMoreCategory: { type: [String], default: [] },          // Extra categories/tags for "Explore more"
 
     // Suggestions
     universityCategoryForSuggestion: { type: String },             // University category for suggestion
