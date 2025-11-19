@@ -21,7 +21,9 @@ const createEvent = async (req, res) => {
       eventLargeImage,
       eventPhoneImage,
       videoURL,
-      imageGallery,
+      imageGallery,      
+      metaDescription,
+      keywords,
     } = req.body;
 
     // Validate required fields
@@ -50,6 +52,8 @@ const createEvent = async (req, res) => {
       eventPhoneImage,
       videoURL,
       imageGallery: Array.isArray(imageGallery) ? imageGallery : [],
+      metaDescription,
+      keywords: Array.isArray(keywords) ? keywords : [],
     });
 
     await event.save();
@@ -105,6 +109,15 @@ const updateEvent = async (req, res) => {
   try {
     const { append } = req.query; // Get query parameter (?append=true)
     const updateData = { ...req.body };
+
+    // Normalize keywords if sent
+    if (updateData.keywords && !Array.isArray(updateData.keywords)) {
+      // allow comma-separated string
+      updateData.keywords = String(updateData.keywords)
+        .split(",")
+        .map((k) => k.trim())
+        .filter(Boolean);
+    }
 
     if (req.body.imageGallery) {
       if (!Array.isArray(req.body.imageGallery)) {

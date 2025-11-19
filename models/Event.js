@@ -9,6 +9,18 @@ const eventSchema = new mongoose.Schema(
     imageGallery: [{ type: String, trim: true }], // Array of image URLs
     videoURL: { type: String, trim: true }, // YouTube/Vimeo/Twitch/facebook/dailyMotion/Local URL
     description: { type: String, trim: true }, // Description (optional)
+        // SEO FIELDS
+    metaDescription: {
+      type: String,
+      trim: true,
+      maxlength: 180, // keep under typical SEO length
+    },
+    keywords: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
     place: { type: String, trim: true }, // Venue or online (optional)
     isOnline: { type: Boolean, default: false }, // Online or in-person
     joinURL: { type: String }, // Direct join link (optional, useful for Zoom, Google Meet, etc.)
