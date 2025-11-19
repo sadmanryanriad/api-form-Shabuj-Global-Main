@@ -114,22 +114,50 @@ exports.createBlog = async (req, res) => {
   }
 };
 
-// GET ALL BLOGS (optionally filter by status)
+// GET ALL BLOGS (optionally filter by status) + PAGINATION
 exports.getAllBlogs = async (req, res) => {
   try {
     const { status } = req.query;
-    const filter = {};
+    let { page = 1, limit = 10 } = req.query;
 
+    const filter = {};
     if (status) {
       filter.status = status;
     }
 
-    const blogs = await Blog.find(filter)
-      .populate("categories", "name slug")
-      .select("-__v");
-    res.status(200).json({ count: blogs.length, blogs });
+    // Normalize page & limit
+    page = Math.max(parseInt(page) || 1, 1);
+    limit = Math.max(parseInt(limit) || 10, 1);
+    const skip = (page - 1) * limit;
+
+    // Run count + query in parallel
+    const [totalCount, blogs] = await Promise.all([
+      Blog.countDocuments(filter),
+      Blog.find(filter)
+        .sort({ createdAt: -1 }) // newest first
+        .skip(skip)
+        .limit(limit)
+        .populate("categories", "name slug")
+        .select("-__v"),
+    ]);
+
+    const totalPages = Math.max(Math.ceil(totalCount / limit), 1);
+
+    return res.status(200).json({
+      meta: {
+        page,
+        limit,
+        totalPages,
+        totalCount,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+      count: blogs.length, // current page count (for convenience)
+      blogs,
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Error in getAllBlogs:", error);
+    return res.status(500).json({ error: error.message });
   }
 };
 
@@ -295,10 +323,11 @@ exports.getLatestBlogs = async (req, res) => {
   }
 };
 
-// GET BLOGS BY CATEGORY (slug OR ObjectId)
+// GET BLOGS BY CATEGORY (slug OR ObjectId) + PAGINATION
 exports.getBlogsByCategory = async (req, res) => {
   try {
-    const { category: identifier } = req.params; // can be slug or id
+    const { category: identifier } = req.params; // slug or id
+    let { page = 1, limit = 10 } = req.query;
 
     if (!identifier) {
       return res
@@ -308,12 +337,12 @@ exports.getBlogsByCategory = async (req, res) => {
 
     let categoryDoc = null;
 
-    // If it looks like a valid ObjectId, try by _id first
+    // Try by ObjectId first if looks valid
     if (mongoose.Types.ObjectId.isValid(identifier)) {
       categoryDoc = await BlogCategory.findById(identifier);
     }
 
-    // If not found by id (or not a valid ObjectId), try by slug
+    // If not found by id, try by slug
     if (!categoryDoc) {
       categoryDoc = await BlogCategory.findOne({ slug: identifier });
     }
@@ -322,17 +351,38 @@ exports.getBlogsByCategory = async (req, res) => {
       return res.status(404).json({ message: "Category not found" });
     }
 
-    // Find blogs that have this category's _id in their categories array
-    const blogs = await Blog.find({ categories: categoryDoc._id })
-      .sort({ createdAt: -1 })
-      .populate("categories", "name slug")
-      .select("-__v");
+    // Normalize pagination
+    page = Math.max(parseInt(page) || 1, 1);
+    limit = Math.max(parseInt(limit) || 10, 1);
+    const skip = (page - 1) * limit;
+
+    const filter = { categories: categoryDoc._id };
+
+    const [totalCount, blogs] = await Promise.all([
+      Blog.countDocuments(filter),
+      Blog.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate("categories", "name slug")
+        .select("-__v"),
+    ]);
+
+    const totalPages = Math.max(Math.ceil(totalCount / limit), 1);
 
     return res.status(200).json({
       category: {
         _id: categoryDoc._id,
         name: categoryDoc.name,
         slug: categoryDoc.slug,
+      },
+      meta: {
+        page,
+        limit,
+        totalPages,
+        totalCount,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
       },
       count: blogs.length,
       blogs,
@@ -342,6 +392,7 @@ exports.getBlogsByCategory = async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 };
+
 
 // GET ALL DEFINED CATEGORIES (canonical list)
 exports.getAllCategories = async (req, res) => {
