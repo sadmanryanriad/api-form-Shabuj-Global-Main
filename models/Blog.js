@@ -3,30 +3,42 @@ const mongoose = require("mongoose");
 const blogSchema = new mongoose.Schema(
   {
     // Basic content
-    title: { type: String, required: true },                       // Title
-    category: { type: [String], required: true },                  // Category
-    img: { type: String, required: true },                         // Img (main image URL)
-    date: { type: Date, default: Date.now },                       // Date (can be publish date)
-    author: { type: String, required: true },                      // Author
-    summary: { type: String, required: true },                     // Summary / short description
-    tableOfContents: [{ type: String }],                           // Table of content (array of headings/items)
-    mainContent: { type: String, required: true },                 // Main content (HTML / rich text)
-    video: { type: String },                                       // Optional video URL (YouTube, etc.)
-    exploreMoreCategory: { type: [String], default: [] },          // Extra categories/tags for "Explore more"
+    title: { type: String, required: true }, // Title
+
+    // Categories: array of BlogCategory ObjectIds
+    categories: {
+      type: [{ type: mongoose.Schema.Types.ObjectId, ref: "BlogCategory" }],
+      validate: {
+        validator: function (v) {
+          return Array.isArray(v) && v.length > 0;
+        },
+        message: "A blog must have at least one category.",
+      },
+    },
+
+    img: { type: String, required: true }, // Img (main image URL)
+    date: { type: Date, default: Date.now }, // Date (publish date)
+    author: { type: String, required: true }, // Author
+    summary: { type: String, required: true }, // Summary / short description
+    tableOfContents: [{ type: String }], // Table of content (array of headings/items)
+    mainContent: { type: String, required: true }, // Main content (HTML / rich text)
+
+    video: { type: String }, // Optional video URL
+    exploreMoreCategory: { type: [String], default: [] }, // Explore-more tags
 
     // Suggestions
-    universityCategoryForSuggestion: { type: String },             // University category for suggestion
-    manualCategorySuggestions: { type: [String], default: [] },    // Manual category-based suggestions (string array)
+    universityCategoryForSuggestion: { type: String }, // University category for suggestion
+    manualCategorySuggestions: { type: [String], default: [] }, // Manual category-based suggestions (string array)
 
     // SEO
     metaTitle: { type: String },
     metaDescription: { type: String },
-    metaKeyword: { type: String },                                 // Comma-separated or single keyword string
+    metaKeyword: { type: String }, // Comma-separated or single keyword string
 
     // CTA
-    ctaUrl: { type: String },                                      // CTA_URL
-    ctaBtn: { type: String },                                      // CTA_Btn
-    isFormHidden: { type: Boolean, default: false },               // For CTA form visibility
+    ctaUrl: { type: String }, // CTA_URL
+    ctaBtn: { type: String }, // CTA_Btn
+    isFormHidden: { type: Boolean, default: false }, // For CTA form visibility
 
     // Status
     status: {

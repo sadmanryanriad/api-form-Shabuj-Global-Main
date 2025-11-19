@@ -1,12 +1,14 @@
+const mongoose = require("mongoose");
 const Blog = require("../models/Blog");
 const BlogTrash = require("../models/BlogTrash");
+const BlogCategory = require("../models/BlogCategory");
 
 // CREATE BLOG
 exports.createBlog = async (req, res) => {
   try {
     let {
       title,
-      category,
+      categories: categorySlugs, // now treated as slugs
       img,
       date,
       author,
@@ -23,31 +25,49 @@ exports.createBlog = async (req, res) => {
       isFormHidden,
       status,
       blogURL,
-      video,              
+      video,
       exploreMoreCategory,
     } = req.body;
 
-    // Normalize category to array
-    let categoryArray;
-    if (Array.isArray(category)) {
-      categoryArray = category;
-    } else if (typeof category === "string" && category.trim() !== "") {
-      categoryArray = [category.trim()];
-    } else {
+    // Validate category slugs
+    if (!Array.isArray(categorySlugs) || categorySlugs.length === 0) {
       return res
         .status(400)
-        .json({ message: "Category is required and must be a string or array of strings" });
+        .json({ message: "At least one category slug is required" });
     }
 
+    // Normalize slugs: string, trimmed, non-empty
+    const normalizedSlugs = categorySlugs
+      .map((s) => String(s || "").trim())
+      .filter((s) => s.length > 0);
+
+    if (normalizedSlugs.length === 0) {
+      return res
+        .status(400)
+        .json({ message: "At least one valid category slug is required" });
+    }
+
+    // Fetch category docs by slug
+    const categoryDocs = await BlogCategory.find({
+      slug: { $in: normalizedSlugs },
+    });
+
+    if (categoryDocs.length !== normalizedSlugs.length) {
+      const foundSlugs = categoryDocs.map((c) => c.slug);
+      const missingSlugs = normalizedSlugs.filter(
+        (s) => !foundSlugs.includes(s)
+      );
+
+      return res.status(400).json({
+        message: "One or more selected categories are invalid.",
+        missingSlugs,
+      });
+    }
+
+    const categoryIds = categoryDocs.map((c) => c._id);
+
     // Basic validation
-    if (
-      !title ||
-      !img ||
-      !author ||
-      !summary ||
-      !mainContent ||
-      !blogURL
-    ) {
+    if (!title || !img || !author || !summary || !mainContent || !blogURL) {
       return res.status(400).json({ message: "Required fields are missing" });
     }
 
@@ -59,7 +79,7 @@ exports.createBlog = async (req, res) => {
 
     const newBlog = new Blog({
       title,
-      category: categoryArray, // store as array
+      categories: categoryIds, // store ObjectIds here
       img,
       date,
       author,
@@ -83,6 +103,7 @@ exports.createBlog = async (req, res) => {
     });
 
     await newBlog.save();
+    await newBlog.populate("categories", "name slug");
 
     res.status(201).json({
       message: "Blog created successfully",
@@ -92,7 +113,6 @@ exports.createBlog = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
 
 // GET ALL BLOGS (optionally filter by status)
 exports.getAllBlogs = async (req, res) => {
@@ -104,7 +124,9 @@ exports.getAllBlogs = async (req, res) => {
       filter.status = status;
     }
 
-    const blogs = await Blog.find(filter).select("-__v");
+    const blogs = await Blog.find(filter)
+      .populate("categories", "name slug")
+      .select("-__v");
     res.status(200).json({ count: blogs.length, blogs });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -187,6 +209,49 @@ exports.updateBlogByBlogURL = async (req, res) => {
       }
     }
 
+    // If categories (slugs) are being updated, resolve them to IDs
+    if (updates.categories) {
+      if (
+        !Array.isArray(updates.categories) ||
+        updates.categories.length === 0
+      ) {
+        return res
+          .status(400)
+          .json({ message: "At least one category slug is required" });
+      }
+
+      const normalizedSlugs = updates.categories
+        .map((s) => String(s || "").trim())
+        .filter((s) => s.length > 0);
+
+      if (normalizedSlugs.length === 0) {
+        return res.status(400).json({
+          message: "At least one valid category slug is required",
+        });
+      }
+
+      const categoryDocs = await BlogCategory.find({
+        slug: { $in: normalizedSlugs },
+      });
+
+      if (categoryDocs.length !== normalizedSlugs.length) {
+        const foundSlugs = categoryDocs.map((c) => c.slug);
+        const missingSlugs = normalizedSlugs.filter(
+          (s) => !foundSlugs.includes(s)
+        );
+
+        return res.status(400).json({
+          message: "One or more selected categories are invalid.",
+          missingSlugs,
+        });
+      }
+
+      const categoryIds = categoryDocs.map((c) => c._id);
+
+      // override updates.categories with IDs so the rest of the code works
+      updates.categories = categoryIds;
+    }
+
     // Versioning: push current version into history, then increment
     const currentVersion = parseFloat(blog.version || "1.0") || 1.0;
 
@@ -204,6 +269,7 @@ exports.updateBlogByBlogURL = async (req, res) => {
     });
 
     await blog.save();
+    await blog.populate("categories", "name slug");
 
     res.status(200).json({
       message: "Blog updated successfully",
@@ -229,31 +295,61 @@ exports.getLatestBlogs = async (req, res) => {
   }
 };
 
-// GET BLOGS BY CATEGORY 
+// GET BLOGS BY CATEGORY (slug OR ObjectId)
 exports.getBlogsByCategory = async (req, res) => {
   try {
-    const { category } = req.params;
+    const { category: identifier } = req.params; // can be slug or id
 
-    if (!category) {
-      return res.status(400).json({ message: "Category is required" });
+    if (!identifier) {
+      return res
+        .status(400)
+        .json({ message: "Category identifier is required" });
     }
 
-    // Match blogs where category array contains this value
-    const blogs = await Blog.find({ category: { $in: [category] } })
+    let categoryDoc = null;
+
+    // If it looks like a valid ObjectId, try by _id first
+    if (mongoose.Types.ObjectId.isValid(identifier)) {
+      categoryDoc = await BlogCategory.findById(identifier);
+    }
+
+    // If not found by id (or not a valid ObjectId), try by slug
+    if (!categoryDoc) {
+      categoryDoc = await BlogCategory.findOne({ slug: identifier });
+    }
+
+    if (!categoryDoc) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+
+    // Find blogs that have this category's _id in their categories array
+    const blogs = await Blog.find({ categories: categoryDoc._id })
       .sort({ createdAt: -1 })
+      .populate("categories", "name slug")
       .select("-__v");
 
-    res.status(200).json({ count: blogs.length, blogs });
+    return res.status(200).json({
+      category: {
+        _id: categoryDoc._id,
+        name: categoryDoc.name,
+        slug: categoryDoc.slug,
+      },
+      count: blogs.length,
+      blogs,
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Error in getBlogsByCategory:", error);
+    return res.status(500).json({ error: error.message });
   }
 };
 
-
-// GET DISTINCT CATEGORY LIST 
+// GET ALL DEFINED CATEGORIES (canonical list)
 exports.getAllCategories = async (req, res) => {
   try {
-    const categories = await Blog.distinct("category"); // each unique tag
+    const categories = await BlogCategory.find()
+      .sort({ name: 1 })
+      .select("name slug description isSystemProtected createdAt updatedAt");
+
     res.status(200).json({
       count: categories.length,
       categories,
@@ -263,6 +359,53 @@ exports.getAllCategories = async (req, res) => {
   }
 };
 
+// GET ONLY CATEGORIES THAT ARE USED IN AT LEAST ONE BLOG + BLOG COUNT
+exports.getUsedCategories = async (req, res) => {
+  try {
+    // Aggregate blog counts per category
+    const counts = await Blog.aggregate([
+      { $unwind: "$categories" }, // each category entry
+      { $group: { _id: "$categories", blogCount: { $sum: 1 } } }, // count blogs per categoryId
+    ]);
+
+    if (!counts.length) {
+      return res.status(200).json({
+        count: 0,
+        categories: [],
+      });
+    }
+
+    // Extract category IDs from aggregation
+    const categoryIds = counts.map((item) => item._id);
+
+    // Fetch category documents
+    const categories = await BlogCategory.find({ _id: { $in: categoryIds } })
+      .sort({ name: 1 })
+      .select("name slug description");
+
+    // Map: categoryId -> blogCount
+    const countMap = counts.reduce((acc, item) => {
+      acc[item._id.toString()] = item.blogCount;
+      return acc;
+    }, {});
+
+    // Build response array with blogCount per category
+    const result = categories.map((cat) => ({
+      _id: cat._id,
+      name: cat.name,
+      slug: cat.slug,
+      description: cat.description,
+      blogCount: countMap[cat._id.toString()] || 0,
+    }));
+
+    res.status(200).json({
+      count: result.length,
+      categories: result,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 
 // DELETE BLOG BY blogURL (move to trash)
 exports.deleteBlogByBlogURL = async (req, res) => {
@@ -297,7 +440,9 @@ exports.deleteBlogByBlogURL = async (req, res) => {
 // GET ALL TRASHED BLOGS
 exports.getAllTrashedBlogs = async (req, res) => {
   try {
-    const trashedBlogs = await BlogTrash.find().sort({ deletedAt: -1 }).select("-__v");
+    const trashedBlogs = await BlogTrash.find()
+      .sort({ deletedAt: -1 })
+      .select("-__v");
 
     res.status(200).json({
       count: trashedBlogs.length,
@@ -305,5 +450,186 @@ exports.getAllTrashedBlogs = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+};
+
+//
+// 🔹 CATEGORY ADMIN CONTROLLERS
+//
+
+// CREATE CATEGORY (Admin only)
+exports.createCategory = async (req, res) => {
+  try {
+    const { name, slug, description } = req.body;
+
+    if (!name || !slug) {
+      return res
+        .status(400)
+        .json({ message: "Name and slug are required for category" });
+    }
+
+    const isValidSlug = /^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug);
+    if (!isValidSlug) {
+      return res.status(400).json({
+        message:
+          "Invalid slug format. Use lowercase letters, numbers (0-9), and hyphens.",
+      });
+    }
+
+    const existing = await BlogCategory.findOne({ slug });
+    if (existing) {
+      return res.status(400).json({ message: "Category slug already exists" });
+    }
+
+    const category = new BlogCategory({
+      name,
+      slug,
+      description,
+      // isSystemProtected: false by default
+    });
+
+    await category.save();
+
+    res.status(201).json({
+      message: "Category created successfully",
+      data: category,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// UPDATE CATEGORY (Admin only)
+exports.updateCategory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, slug, description } = req.body;
+
+    const category = await BlogCategory.findById(id);
+
+    if (!category) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+
+    if (category.isSystemProtected) {
+      // Optionally restrict editing slug/name for system categories
+      if (slug && slug !== category.slug) {
+        return res.status(400).json({
+          message: "Cannot change slug of a system-protected category",
+        });
+      }
+    }
+
+    if (name) category.name = name;
+
+    if (slug && slug !== category.slug) {
+      const isValidSlug = /^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug);
+      if (!isValidSlug) {
+        return res.status(400).json({
+          message:
+            "Invalid slug format. Use lowercase letters, numbers (0-9), and hyphens.",
+        });
+      }
+
+      const existing = await BlogCategory.findOne({ slug });
+      if (existing && existing._id.toString() !== category._id.toString()) {
+        return res
+          .status(400)
+          .json({ message: "Category slug already exists" });
+      }
+
+      category.slug = slug;
+    }
+
+    if (description !== undefined) {
+      category.description = description;
+    }
+
+    await category.save();
+
+    res.status(200).json({
+      message: "Category updated successfully",
+      data: category,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// DELETE CATEGORY (accepts slug OR ObjectId) with safety checks
+exports.deleteCategory = async (req, res) => {
+  try {
+    const { id: identifier } = req.params; // can be slug or id
+
+    let category = null;
+
+    // Try by ObjectId first if valid
+    if (mongoose.Types.ObjectId.isValid(identifier)) {
+      category = await BlogCategory.findById(identifier);
+    }
+
+    // If not found or not a valid ObjectId, try by slug
+    if (!category) {
+      category = await BlogCategory.findOne({ slug: identifier });
+    }
+
+    if (!category) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+
+    if (category.isSystemProtected) {
+      return res
+        .status(400)
+        .json({ message: "Cannot delete a system-protected category" });
+    }
+
+    // Find all blogs using this category
+    const blogsUsingCategory = await Blog.find({
+      categories: category._id,
+    }).select("title blogURL categories");
+
+    // Blogs for which this is the ONLY category
+    const blockingBlogs = blogsUsingCategory.filter(
+      (b) => Array.isArray(b.categories) && b.categories.length === 1
+    );
+
+    if (blockingBlogs.length > 0) {
+      return res.status(400).json({
+        message:
+          "Cannot delete category because some blogs use it as their only category.",
+        blockingBlogs: blockingBlogs.map((b) => ({
+          _id: b._id,
+          title: b.title,
+          blogURL: b.blogURL,
+        })),
+      });
+    }
+
+    // Must keep at least 1 category rule
+    const otherCategoriesCount = await BlogCategory.countDocuments({
+      _id: { $ne: category._id },
+    });
+
+    if (otherCategoriesCount === 0) {
+      return res.status(400).json({
+        message: "You must keep at least 1 category.",
+      });
+    }
+
+    // Safe: remove this category from all blogs (they have other categories)
+    await Blog.updateMany(
+      { categories: category._id },
+      { $pull: { categories: category._id } }
+    );
+
+    // Finally delete the category
+    await BlogCategory.deleteOne({ _id: category._id });
+
+    return res.status(200).json({
+      message: "Category deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error in deleteCategory:", error);
+    return res.status(500).json({ error: error.message });
   }
 };

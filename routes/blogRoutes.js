@@ -11,19 +11,34 @@ const {
   getBlogsByCategory,
   getAllCategories,
   getAllTrashedBlogs,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+  getUsedCategories,
 } = require("../controllers/blog");
 
-// Create a blog
+// Blog CRUD
 router.post("/", createBlog);
-
-// Get all blogs (optionally filter by ?status=publish)
 router.get("/", getAllBlogs);
 
-// NEW: Get distinct category list
+// Category list (for dropdown / general use)
 // GET /blogs/categories
+// ALL categories (canonical list)
 router.get("/categories", getAllCategories);
 
-// NEW: Get blogs by category
+// Only categories that are currently used by at least one blog
+// GET /blogs/categories/used
+router.get("/categories/used", getUsedCategories);
+
+// Category admin operations (Admin-only on frontend side)
+// POST /blogs/categories
+router.post("/categories", createCategory);
+// PATCH /blogs/categories/:id
+router.patch("/categories/:id", updateCategory);
+// DELETE /blogs/categories/:id or /blogs/categories/:slug
+router.delete("/category/:id", deleteCategory);
+
+// Get blogs by category slug
 // GET /blogs/category/:category
 router.get("/category/:category", getBlogsByCategory);
 
@@ -39,7 +54,7 @@ router.get("/trash", getAllTrashedBlogs);
 // GET /blogs/check-url/:blogURL
 router.get("/check-url/:blogURL", checkBlogURL);
 
-// Get a blog by its URL (must be after more specific routes)
+// Get a blog by its URL 
 router.get("/:blogURL", getBlogByURL);
 
 // PATCH request to update a blog (also auto-increments version)
@@ -47,6 +62,5 @@ router.patch("/:blogURL", updateBlogByBlogURL);
 
 // Delete blog by URL
 router.delete("/:blogURL", deleteBlogByBlogURL);
-
 
 module.exports = router;
