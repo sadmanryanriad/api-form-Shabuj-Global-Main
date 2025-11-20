@@ -55,6 +55,18 @@ const blogSchema = new mongoose.Schema(
       match: /^[a-z0-9]+(-[a-z0-9]+)*$/, // lowercase letters, numbers, hyphens
     },
 
+    // Parent–child relationship
+    parentBlog: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Blog",
+      default: null,
+      index: true,
+    },
+    childOrder: {
+      type: Number,
+      default: 0,
+    },
+
     // Versioning
     version: {
       type: String,

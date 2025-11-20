@@ -8,7 +8,7 @@ exports.createBlog = async (req, res) => {
   try {
     let {
       title,
-      categories: categorySlugs, // now treated as slugs
+      categories: categorySlugs, // slugs from frontend
       img,
       date,
       author,
@@ -27,16 +27,17 @@ exports.createBlog = async (req, res) => {
       blogURL,
       video,
       exploreMoreCategory,
+      // parent–child
+      parentBlogURL, // (optional)
     } = req.body;
 
-    // Validate category slugs
+    // --- Category validation (by slug) ---
     if (!Array.isArray(categorySlugs) || categorySlugs.length === 0) {
       return res
         .status(400)
         .json({ message: "At least one category slug is required" });
     }
 
-    // Normalize slugs: string, trimmed, non-empty
     const normalizedSlugs = categorySlugs
       .map((s) => String(s || "").trim())
       .filter((s) => s.length > 0);
@@ -47,7 +48,6 @@ exports.createBlog = async (req, res) => {
         .json({ message: "At least one valid category slug is required" });
     }
 
-    // Fetch category docs by slug
     const categoryDocs = await BlogCategory.find({
       slug: { $in: normalizedSlugs },
     });
@@ -66,20 +66,51 @@ exports.createBlog = async (req, res) => {
 
     const categoryIds = categoryDocs.map((c) => c._id);
 
-    // Basic validation
+    // --- Basic validation ---
     if (!title || !img || !author || !summary || !mainContent || !blogURL) {
       return res.status(400).json({ message: "Required fields are missing" });
     }
 
-    // Check URL uniqueness
+    // --- Unique blogURL check ---
     const blogExists = await Blog.findOne({ blogURL });
     if (blogExists) {
       return res.status(400).json({ message: "Blog URL already exists" });
     }
 
+    // --- Resolve parentBlogId from parentBlogURL (optional) ---
+    let parentBlogId = null;
+    if (parentBlogURL) {
+      const parent = await Blog.findOne({ blogURL: parentBlogURL }).select(
+        "_id"
+      );
+
+      if (!parent) {
+        return res.status(400).json({
+          message: "Parent blog not found for the given parentBlogURL",
+        });
+      }
+
+      parentBlogId = parent._id;
+    }
+
+    // --- Auto-assign childOrder on server ---
+    let childOrderValue = 0;
+    if (parentBlogId) {
+      const lastChild = await Blog.find({ parentBlog: parentBlogId })
+        .sort({ childOrder: -1 })
+        .limit(1)
+        .select("childOrder");
+
+      if (lastChild.length > 0) {
+        childOrderValue = (lastChild[0].childOrder || 0) + 1;
+      } else {
+        childOrderValue = 1; // first child
+      }
+    }
+
     const newBlog = new Blog({
       title,
-      categories: categoryIds, // store ObjectIds here
+      categories: categoryIds,
       img,
       date,
       author,
@@ -98,31 +129,52 @@ exports.createBlog = async (req, res) => {
       isFormHidden,
       status,
       blogURL,
+
+      // parent–child
+      parentBlog: parentBlogId,
+      childOrder: childOrderValue,
+
+      // versioning
       version: "1.0",
       versionHistory: [{ version: "1.0", updatedAt: new Date() }],
     });
 
     await newBlog.save();
-    await newBlog.populate("categories", "name slug");
 
-    res.status(201).json({
+    // Populate categories + parentBlog for the response
+    await newBlog.populate([
+      { path: "categories", select: "name slug description" },
+      { path: "parentBlog", select: "title blogURL" },
+    ]);
+
+    return res.status(201).json({
       message: "Blog created successfully",
       data: newBlog,
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Error in createBlog:", error);
+    return res.status(500).json({ error: error.message });
   }
 };
 
-// GET ALL BLOGS (optionally filter by status) + PAGINATION
+// GET ALL BLOGS (optionally filter by status) + PAGINATION + ROOT/CHILD FILTERS
 exports.getAllBlogs = async (req, res) => {
   try {
-    const { status } = req.query;
+    const { status, onlyRoots, onlyChildren } = req.query;
     let { page = 1, limit = 10 } = req.query;
 
     const filter = {};
     if (status) {
       filter.status = status;
+    }
+
+    // Optional filters:
+    // onlyRoots=true  -> parentBlog = null
+    // onlyChildren=true -> parentBlog != null
+    if (onlyRoots === "true") {
+      filter.parentBlog = null;
+    } else if (onlyChildren === "true") {
+      filter.parentBlog = { $ne: null };
     }
 
     // Normalize page & limit
@@ -137,7 +189,7 @@ exports.getAllBlogs = async (req, res) => {
         .sort({ createdAt: -1 }) // newest first
         .skip(skip)
         .limit(limit)
-        .populate("categories", "name slug")
+        .populate("categories", "name slug description")
         .select("-__v"),
     ]);
 
@@ -152,7 +204,7 @@ exports.getAllBlogs = async (req, res) => {
         hasNextPage: page < totalPages,
         hasPrevPage: page > 1,
       },
-      count: blogs.length, // current page count (for convenience)
+      count: blogs.length,
       blogs,
     });
   } catch (error) {
@@ -161,20 +213,60 @@ exports.getAllBlogs = async (req, res) => {
   }
 };
 
-// GET BLOG BY URL
+// GET BLOG BY URL (with parent, ancestors & children)
 exports.getBlogByURL = async (req, res) => {
   try {
-    const blog = await Blog.findOne({
-      blogURL: req.params.blogURL,
-    })
+    const { blogURL } = req.params;
+
+    const blog = await Blog.findOne({ blogURL })
       .populate("categories", "name slug description")
+      .populate("parentBlog", "title blogURL")
       .select("-__v");
 
     if (!blog) {
       return res.status(404).json({ message: "Blog not found" });
     }
 
-    return res.status(200).json(blog);
+    const blogObj = blog.toObject();
+
+    // Build ancestors chain (root -> ... -> immediate parent)
+    const ancestors = [];
+    let currentParentId = blog.parentBlog ? blog.parentBlog._id : null;
+    const visited = new Set();
+    let depth = 0;
+    const MAX_DEPTH = 10; // safety to avoid loops
+
+    while (
+      currentParentId &&
+      depth < MAX_DEPTH &&
+      !visited.has(currentParentId.toString())
+    ) {
+      visited.add(currentParentId.toString());
+      const parentDoc = await Blog.findById(currentParentId).select(
+        "title blogURL parentBlog"
+      );
+
+      if (!parentDoc) break;
+
+      ancestors.unshift({
+        _id: parentDoc._id,
+        title: parentDoc.title,
+        blogURL: parentDoc.blogURL,
+      });
+
+      currentParentId = parentDoc.parentBlog;
+      depth++;
+    }
+
+    // Find direct children
+    const children = await Blog.find({ parentBlog: blog._id })
+      .sort({ childOrder: 1, createdAt: 1 })
+      .select("title blogURL childOrder status createdAt");
+
+    blogObj.ancestors = ancestors; // for breadcrumb
+    blogObj.children = children; // for series navigation
+
+    return res.status(200).json(blogObj);
   } catch (error) {
     console.error("Error in getBlogByURL:", error);
     return res.status(500).json({ error: error.message });
@@ -217,7 +309,7 @@ exports.checkBlogURL = async (req, res) => {
 exports.updateBlogByBlogURL = async (req, res) => {
   try {
     const { blogURL } = req.params;
-    const updates = req.body;
+    const updates = { ...req.body };
 
     // Find existing blog
     const blog = await Blog.findOne({ blogURL });
@@ -280,9 +372,38 @@ exports.updateBlogByBlogURL = async (req, res) => {
       }
 
       const categoryIds = categoryDocs.map((c) => c._id);
-
-      // override updates.categories with IDs so the rest of the code works
       updates.categories = categoryIds;
+    }
+
+    // Handle parentBlogURL if provided
+    if ("parentBlogURL" in updates) {
+      const parentBlogURL = updates.parentBlogURL;
+
+      if (!parentBlogURL) {
+        // Detach: make this blog a root
+        blog.parentBlog = null;
+      } else {
+        const parent = await Blog.findOne({ blogURL: parentBlogURL }).select(
+          "_id parentBlog"
+        );
+
+        if (!parent) {
+          return res.status(400).json({
+            message: "Parent blog not found for the given parentBlogURL",
+          });
+        }
+
+        if (parent._id.toString() === blog._id.toString()) {
+          return res
+            .status(400)
+            .json({ message: "A blog cannot be its own parent." });
+        }
+
+        blog.parentBlog = parent._id;
+      }
+
+      // Don't assign parentBlogURL directly as a field
+      delete updates.parentBlogURL;
     }
 
     // Versioning: push current version into history, then increment
@@ -296,19 +417,23 @@ exports.updateBlogByBlogURL = async (req, res) => {
     const nextVersion = (currentVersion + 1).toFixed(1); // 1.0 -> 2.0 -> 3.0 etc.
     blog.version = nextVersion;
 
-    // Apply updates to blog document
+    // Apply remaining updates to blog document
     Object.keys(updates).forEach((key) => {
       blog[key] = updates[key];
     });
 
     await blog.save();
-    await blog.populate("categories", "name slug");
+    await blog.populate([
+      { path: "categories", select: "name slug description" },
+      { path: "parentBlog", select: "title blogURL" },
+    ]);
 
     res.status(200).json({
       message: "Blog updated successfully",
       updatedBlog: blog,
     });
   } catch (error) {
+    console.error("Error in updateBlogByBlogURL:", error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -369,7 +494,7 @@ exports.getBlogsByCategory = async (req, res) => {
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
-        .populate("categories", "name slug")
+        .populate("categories", "name slug description")
         .select("-__v"),
     ]);
 
@@ -397,7 +522,6 @@ exports.getBlogsByCategory = async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 };
-
 
 // GET ALL DEFINED CATEGORIES (canonical list)
 exports.getAllCategories = async (req, res) => {
@@ -463,7 +587,7 @@ exports.getUsedCategories = async (req, res) => {
   }
 };
 
-// DELETE BLOG BY blogURL (move to trash)
+// DELETE BLOG BY blogURL (move to trash, but block if it has children)
 exports.deleteBlogByBlogURL = async (req, res) => {
   try {
     const { blogURL } = req.params;
@@ -475,11 +599,28 @@ exports.deleteBlogByBlogURL = async (req, res) => {
       return res.status(404).json({ message: "Blog not found" });
     }
 
+    // Check if this blog has children
+    const children = await Blog.find({ parentBlog: blog._id }).select(
+      "title blogURL"
+    );
+
+    if (children.length > 0) {
+      return res.status(400).json({
+        message:
+          "Cannot delete this blog because it has child blogs. Reassign or detach children first.",
+        children: children.map((c) => ({
+          _id: c._id,
+          title: c.title,
+          blogURL: c.blogURL,
+        })),
+      });
+    }
+
     // Store in trash collection
     await BlogTrash.create({
       originalId: blog._id,
       deletedAt: new Date(),
-      ...blog.toObject(), // copy all fields
+      ...blog.toObject(), // copy all fields (including parentBlog)
     });
 
     // Now delete from main Blog collection
@@ -490,6 +631,7 @@ exports.deleteBlogByBlogURL = async (req, res) => {
       blogURL: blog.blogURL,
     });
   } catch (error) {
+    console.error("Error in deleteBlogByBlogURL:", error);
     res.status(500).json({ error: error.message });
   }
 };
