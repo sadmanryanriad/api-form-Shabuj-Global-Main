@@ -166,13 +166,18 @@ exports.getBlogByURL = async (req, res) => {
   try {
     const blog = await Blog.findOne({
       blogURL: req.params.blogURL,
-    }).select("-__v");
+    })
+      .populate("categories", "name slug description")
+      .select("-__v");
 
-    if (!blog) return res.status(404).json({ message: "Blog not found" });
+    if (!blog) {
+      return res.status(404).json({ message: "Blog not found" });
+    }
 
-    res.status(200).json(blog);
+    return res.status(200).json(blog);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Error in getBlogByURL:", error);
+    return res.status(500).json({ error: error.message });
   }
 };
 
