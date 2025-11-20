@@ -684,3 +684,45 @@ exports.deleteCategory = async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 };
+
+// CHECK CATEGORY SLUG AVAILABILITY
+// GET /blogs/categories/check-slug/:slug
+exports.checkCategorySlug = async (req, res) => {
+  try {
+    const { slug } = req.params;
+
+    // Basic format validation (same style as blogURL)
+    const isValid = /^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug);
+    if (!isValid) {
+      return res.status(400).json({
+        isUnique: false,
+        message:
+          "Invalid category slug format. Use lowercase letters, numbers (0-9), and hyphens.",
+      });
+    }
+
+    // Check if slug already exists in BlogCategory collection
+    const existingCategory = await BlogCategory.findOne({ slug });
+
+    if (existingCategory) {
+      return res.status(200).json({
+        isUnique: false,
+        message: "Category slug already exists.",
+        category: {
+          _id: existingCategory._id,
+          name: existingCategory.name,
+          slug: existingCategory.slug,
+        },
+      });
+    }
+
+    // Slug is valid and not used
+    return res.status(200).json({
+      isUnique: true,
+      message: "Category slug is available.",
+    });
+  } catch (error) {
+    console.error("Error in checkCategorySlug:", error);
+    return res.status(500).json({ error: error.message });
+  }
+};

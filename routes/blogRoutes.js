@@ -15,6 +15,7 @@ const {
   updateCategory,
   deleteCategory,
   getUsedCategories,
+  checkCategorySlug
 } = require("../controllers/blog");
 
 // Blog CRUD
@@ -29,6 +30,10 @@ router.get("/categories", getAllCategories);
 // Only categories that are currently used by at least one blog
 // GET /blogs/categories/used
 router.get("/categories/used", getUsedCategories);
+
+// Check if category slug is unique
+// GET /blogs/categories/check-slug/:slug
+router.get("/categories/check-slug/:slug", checkCategorySlug);
 
 // Category admin operations (Admin-only on frontend side)
 // POST /blogs/categories
