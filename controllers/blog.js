@@ -442,13 +442,16 @@ exports.updateBlogByBlogURL = async (req, res) => {
 exports.getLatestBlogs = async (req, res) => {
   try {
     const limit = parseInt(req.params.limit) || 10;
+
     const blogs = await Blog.find()
       .sort({ createdAt: -1 }) // newest first
       .limit(limit)
+      .populate("categories", "name slug description")
       .select("-__v");
 
     res.status(200).json({ count: blogs.length, blogs });
   } catch (error) {
+    console.error("Error in getLatestBlogs:", error);
     res.status(500).json({ error: error.message });
   }
 };
