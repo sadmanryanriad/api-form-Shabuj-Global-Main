@@ -27,6 +27,7 @@ exports.createBlog = async (req, res) => {
       blogURL,
       video,
       exploreMoreCategory,
+      faqs,
       // parent–child
       parentBlogURL, // (optional)
     } = req.body;
@@ -129,6 +130,7 @@ exports.createBlog = async (req, res) => {
       isFormHidden,
       status,
       blogURL,
+      faqs: Array.isArray(faqs) ? faqs : [],
 
       // parent–child
       parentBlog: parentBlogId,

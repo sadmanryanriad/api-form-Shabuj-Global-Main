@@ -26,6 +26,13 @@ const blogSchema = new mongoose.Schema(
     video: { type: String }, // Optional video URL
     exploreMoreCategory: { type: [String], default: [] }, // Explore-more tags
 
+    // FAQs
+    faqs: [
+      {
+        question: { type: String, required: true },
+        answer: { type: String, required: true },
+      },
+    ],
     // Suggestions
     universityCategoryForSuggestion: { type: String }, // University category for suggestion
     manualCategorySuggestions: { type: [String], default: [] }, // Manual category-based suggestions (string array)
