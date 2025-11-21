@@ -189,7 +189,10 @@ exports.getAllBlogs = async (req, res) => {
         .sort({ createdAt: -1 }) // newest first
         .skip(skip)
         .limit(limit)
-        .populate("categories", "name slug description")
+        .populate([
+          { path: "categories", select: "name slug description" },
+          { path: "parentBlog", select: "title blogURL" }, 
+        ])
         .select("-__v"),
     ]);
 
