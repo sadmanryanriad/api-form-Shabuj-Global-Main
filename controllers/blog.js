@@ -159,7 +159,7 @@ exports.createBlog = async (req, res) => {
   }
 };
 
-// GET ALL BLOGS (optionally filter by status) + PAGINATION + ROOT/CHILD FILTERS
+// GET ALL BLOGS (optionally filter by status) + PAGINATION + ROOT/CHILD FILTERS + ANCESTORS
 exports.getAllBlogs = async (req, res) => {
   try {
     const { status, onlyRoots, onlyChildren } = req.query;
@@ -171,7 +171,7 @@ exports.getAllBlogs = async (req, res) => {
     }
 
     // Optional filters:
-    // onlyRoots=true  -> parentBlog = null
+    // onlyRoots=true    -> parentBlog = null
     // onlyChildren=true -> parentBlog != null
     if (onlyRoots === "true") {
       filter.parentBlog = null;
@@ -193,12 +193,51 @@ exports.getAllBlogs = async (req, res) => {
         .limit(limit)
         .populate([
           { path: "categories", select: "name slug description" },
-          { path: "parentBlog", select: "title blogURL" }, 
+          { path: "parentBlog", select: "title blogURL parentBlog" },
         ])
         .select("-__v"),
     ]);
 
     const totalPages = Math.max(Math.ceil(totalCount / limit), 1);
+
+    // Build ancestors array for each blog
+    const blogsWithAncestors = [];
+
+    for (const blog of blogs) {
+      const blogObj = blog.toObject(); // plain JS object for safe mutation
+      const ancestors = [];
+
+      // Start from the immediate parent (already populated by query)
+      let currentParent = blog.parentBlog;
+
+      while (currentParent) {
+        let parentDoc;
+
+        // If populated document
+        if (typeof currentParent === "object" && currentParent._id) {
+          parentDoc = currentParent;
+        } else {
+          // Fallback: fetch by id (for deeper ancestors)
+          parentDoc = await Blog.findById(currentParent).select(
+            "title blogURL parentBlog"
+          );
+        }
+
+        if (!parentDoc) break;
+
+        // Add to start so array is [root, ..., directParent]
+        ancestors.unshift({
+          _id: parentDoc._id,
+          title: parentDoc.title,
+          blogURL: parentDoc.blogURL,
+        });
+
+        currentParent = parentDoc.parentBlog;
+      }
+
+      blogObj.ancestors = ancestors;
+      blogsWithAncestors.push(blogObj);
+    }
 
     return res.status(200).json({
       meta: {
@@ -209,8 +248,8 @@ exports.getAllBlogs = async (req, res) => {
         hasNextPage: page < totalPages,
         hasPrevPage: page > 1,
       },
-      count: blogs.length,
-      blogs,
+      count: blogsWithAncestors.length,
+      blogs: blogsWithAncestors,
     });
   } catch (error) {
     console.error("Error in getAllBlogs:", error);
