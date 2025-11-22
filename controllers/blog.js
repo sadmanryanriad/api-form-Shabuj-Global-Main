@@ -310,11 +310,11 @@ exports.checkBlogURL = async (req, res) => {
   }
 };
 
-// UPDATE BLOG BY blogURL + AUTO VERSION INCREMENT
+// UPDATE BLOG BY blogURL + AUTO VERSION INCREMENT + PARENT HANDLING
 exports.updateBlogByBlogURL = async (req, res) => {
   try {
     const { blogURL } = req.params;
-    const updates = { ...req.body };
+    const updates = { ...req.body }; // shallow copy to safely delete keys
 
     // Find existing blog
     const blog = await Blog.findOne({ blogURL });
@@ -323,7 +323,12 @@ exports.updateBlogByBlogURL = async (req, res) => {
       return res.status(404).json({ message: "Blog not found" });
     }
 
-    // If blogURL is being updated, validate & ensure uniqueness
+    // --- Prevent direct parentBlog overwrites from client (string -> ObjectId cast issue) ---
+    if ("parentBlog" in updates) {
+      delete updates.parentBlog;
+    }
+
+    // --- Handle blogURL change (slug) ---
     if (updates.blogURL && updates.blogURL !== blog.blogURL) {
       const isValid = /^[a-z0-9]+(-[a-z0-9]+)*$/.test(updates.blogURL);
       if (!isValid) {
@@ -339,12 +344,9 @@ exports.updateBlogByBlogURL = async (req, res) => {
       }
     }
 
-    // If categories (slugs) are being updated, resolve them to IDs
+    // --- Handle categories (slugs -> ObjectIds) if provided ---
     if (updates.categories) {
-      if (
-        !Array.isArray(updates.categories) ||
-        updates.categories.length === 0
-      ) {
+      if (!Array.isArray(updates.categories) || updates.categories.length === 0) {
         return res
           .status(400)
           .json({ message: "At least one category slug is required" });
@@ -377,20 +379,20 @@ exports.updateBlogByBlogURL = async (req, res) => {
       }
 
       const categoryIds = categoryDocs.map((c) => c._id);
-      updates.categories = categoryIds;
+      updates.categories = categoryIds; // store ObjectIds
     }
 
-    // Handle parentBlogURL if provided
-    if ("parentBlogURL" in updates) {
+    // --- Handle parentBlog via parentBlogURL (string from frontend) ---
+    if (Object.prototype.hasOwnProperty.call(updates, "parentBlogURL")) {
       const parentBlogURL = updates.parentBlogURL;
 
       if (!parentBlogURL) {
-        // Detach: make this blog a root
+        // Detach from parent -> make this a root blog
         blog.parentBlog = null;
+        blog.childOrder = 0;
       } else {
-        const parent = await Blog.findOne({ blogURL: parentBlogURL }).select(
-          "_id parentBlog"
-        );
+        // Find parent blog by its URL
+        const parent = await Blog.findOne({ blogURL: parentBlogURL }).select("_id");
 
         if (!parent) {
           return res.status(400).json({
@@ -398,20 +400,36 @@ exports.updateBlogByBlogURL = async (req, res) => {
           });
         }
 
+        // Safety: avoid self-parent
         if (parent._id.toString() === blog._id.toString()) {
-          return res
-            .status(400)
-            .json({ message: "A blog cannot be its own parent." });
+          return res.status(400).json({
+            message: "A blog cannot be its own parent",
+          });
         }
 
+        // Assign new parent
         blog.parentBlog = parent._id;
+
+        // Auto-assign childOrder for this parent (ignore this blog itself if moving)
+        const lastChild = await Blog.find({
+          parentBlog: parent._id,
+          _id: { $ne: blog._id },
+        })
+          .sort({ childOrder: -1 })
+          .limit(1)
+          .select("childOrder");
+
+        const nextChildOrder =
+          lastChild.length > 0 ? (lastChild[0].childOrder || 0) + 1 : 1;
+
+        blog.childOrder = nextChildOrder;
       }
 
-      // Don't assign parentBlogURL directly as a field
+      // Don't try to set parentBlogURL as a field on the document
       delete updates.parentBlogURL;
     }
 
-    // Versioning: push current version into history, then increment
+    // --- Versioning ---
     const currentVersion = parseFloat(blog.version || "1.0") || 1.0;
 
     blog.versionHistory.push({
@@ -422,24 +440,32 @@ exports.updateBlogByBlogURL = async (req, res) => {
     const nextVersion = (currentVersion + 1).toFixed(1); // 1.0 -> 2.0 -> 3.0 etc.
     blog.version = nextVersion;
 
-    // Apply remaining updates to blog document
+    // --- Apply remaining updates (safe fields only) ---
     Object.keys(updates).forEach((key) => {
+      // we already handled parentBlog / parentBlogURL above
+      if (["parentBlog", "parentBlogURL"].includes(key)) return;
+
+      // optionally, if I don't want UI to overwrite childOrder manually yet:
+      // if (key === "childOrder") return;
+
       blog[key] = updates[key];
     });
 
     await blog.save();
+
+    // Populate relations for response
     await blog.populate([
       { path: "categories", select: "name slug description" },
       { path: "parentBlog", select: "title blogURL" },
     ]);
 
-    res.status(200).json({
+    return res.status(200).json({
       message: "Blog updated successfully",
       updatedBlog: blog,
     });
   } catch (error) {
     console.error("Error in updateBlogByBlogURL:", error);
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 };
 
